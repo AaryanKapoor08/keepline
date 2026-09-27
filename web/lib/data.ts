@@ -133,3 +133,28 @@ export function cssVar(name: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
+
+// ---------------------------------------------------------------------------------------------- restatement vs change
+const STOP = new Set("the a an of to and or is it in on for our we us as at by be are was now today from with this that".split(" "));
+const WEEKDAYS = /\b(mon|tues|wednes|thurs|fri|satur|sun)day\b/gi;
+function values(t: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of t.matchAll(/\d+(?::\d+)?(?:st|nd|rd|th)?/gi)) out.add(m[0].toLowerCase());
+  for (const m of t.matchAll(WEEKDAYS)) out.add(m[0].toLowerCase());
+  // proper nouns: capitalised words that don't start a sentence
+  for (const m of t.matchAll(/(?<![.!?]\s|^)\b([A-Z][A-Za-z0-9]+)\b/g)) out.add(m[1].toLowerCase());
+  return out;
+}
+function tokens(t: string): Set<string> {
+  return new Set(t.toLowerCase().match(/[a-z0-9]+/g)?.filter((w) => !STOP.has(w) && w.length > 1) ?? []);
+}
+/** True when the "new" fact only restates the old one (no new value, similar wording): not a real change. */
+export function isRestatement(newText: string, oldText: string): boolean {
+  const nv = values(newText);
+  const ov = new Set([...values(oldText), ...tokens(oldText)]);
+  for (const v of nv) if (!ov.has(v)) return false;
+  const a = tokens(newText);
+  const b = tokens(oldText);
+  const inter = [...a].filter((x) => b.has(x)).length;
+  return inter / (a.size + b.size - inter || 1) >= 0.4;
+}

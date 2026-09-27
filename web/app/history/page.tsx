@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Hash, Mail, Ticket, FileText } from "lucide-react";
-import { getJSON, useData, fmtDate, first } from "@/lib/data";
+import { getJSON, useData, fmtDate, first, isRestatement } from "@/lib/data";
 import { PageTop, Card, Avatar, Details, Fade } from "@/components/kit";
 import { cn } from "@/components/ui";
 
@@ -63,9 +63,10 @@ export default function HistoryPage() {
   const commits = useMemo(() => {
     const cs: any[] = (h?.commits ?? []).filter((c: any) => c.valid_from <= asOf);
     const replacedBy = new Set(cs.filter((c) => c.supersedes).map((c) => c.supersedes));
-    return cs.filter((c) => !replacedBy.has(c.fact_id)).slice(0, 7).map((c) => ({ ...c, versions: 1 + (h?.diffs ?? []).filter((d: any) => d.new.fact_id === c.fact_id).length }));
+    return cs.filter((c) => !replacedBy.has(c.fact_id)).slice(0, 7).map((c) => ({ ...c, versions: 1 + (h?.diffs ?? []).filter((d: any) => d.new.fact_id === c.fact_id && !isRestatement(d.new.message, d.old.message)).length }));
   }, [h, asOf]);
-  const diff = (h?.diffs ?? []).find((d: any) => /skip/i.test(d.old.message)) ?? h?.diffs?.[0];
+  const real = (h?.diffs ?? []).filter((d: any) => !isRestatement(d.new.message, d.old.message));
+  const diff = real.find((d: any) => /skip/i.test(d.old.message)) ?? real[0];
 
   return (
     <>
@@ -77,12 +78,17 @@ export default function HistoryPage() {
       </div>
       {tab === "decisions" && (
         <Card title="Decisions ledger" right={<span className="text-[13px] text-muted">{decisions?.length ?? 0} decisions and changes, each credited to who made it</span>}>
-          {(decisions ?? []).slice(0, 12).map((d: any) => (
+          {[...(decisions ?? [])]
+            .map((d: any) => ({ ...d, restated: d.replaced ? isRestatement(d.message, d.replaced) : false }))
+            .sort((a: any, b: any) => Number(!!b.replaced && !b.restated) - Number(!!a.replaced && !a.restated) || (a.valid_from < b.valid_from ? 1 : -1))
+            .slice(0, 12)
+            .map((d: any) => (
             <div key={d.sha} className="flex items-start gap-3 border-b border-[var(--line)] py-3 last:border-0">
               <Avatar id={d.author ?? "sarah"} size={30} />
               <div className="min-w-0 flex-1">
                 <div className="text-[15px] leading-snug">{d.message}</div>
-                {d.replaced && <div className="mt-0.5 text-[13px] text-muted">replaced &ldquo;{d.replaced}&rdquo;</div>}
+                {d.replaced && !d.restated && <div className="mt-0.5 text-[13px] text-muted">replaced &ldquo;{d.replaced}&rdquo;</div>}
+                {d.restated && <div className="mt-0.5 text-[13px] text-muted" title={d.replaced}>also stated {fmtDate(d.replaced_date)} ›</div>}
                 <div className="mt-1 flex items-center gap-2 text-[12.5px] text-muted">
                   <span>decided by {d.author_name}</span>·<span>{fmtDate(d.valid_from)}</span>·<SrcIcon t={d.source_type} /><span>{d.doc_id}</span>
                 </div>

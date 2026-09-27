@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useData, fmtDate } from "@/lib/data";
+import { useData, fmtDate, isRestatement } from "@/lib/data";
 import { PageTop, Card, Details, Big, Avatar } from "@/components/kit";
 import { cn } from "@/components/ui";
 
@@ -13,7 +13,11 @@ export default function Home() {
   const router = useRouter();
   const meta = useData("/meta", "meta").data;
   const risk = useData("/risk", "risk").data;
-  const latest = useData("/history/latest", "history_latest").data;
+  const ledger = useData("/ledger/decisions", "ledger_decisions").data;
+  const latest = [...(ledger ?? [])]
+    .map((d: any) => ({ ...d, change: !!d.replaced && !isRestatement(d.message, d.replaced) }))
+    .sort((a: any, b: any) => Number(b.change) - Number(a.change) || (a.valid_from < b.valid_from ? 1 : -1))
+    .slice(0, 3);
   const people: any[] = meta?.people ?? [];
   const leaving = people.filter((p) => p.departure_date).sort((a, b) => (a.departure_date < b.departure_date ? -1 : 1));
   const joining = people.filter((p) => p.start_date > "2026-09-04");
@@ -72,14 +76,14 @@ export default function Home() {
 
       <div className="mt-4 grid grid-cols-[1.4fr_1fr_1fr] gap-4">
         <Card title="Latest changes" right={<Details href="/history">History</Details>}>
-          {(latest ?? []).map((c: any) => (
+          {latest.map((c: any) => (
             <div key={c.sha} className="flex items-start gap-3 border-b border-[var(--line)] py-3 last:border-0">
               <span className="mt-0.5 font-mono text-[12.5px] text-muted">{c.sha}</span>
               <div className="flex-1">
                 <div className="text-[14.5px] leading-snug">{c.message}</div>
                 <div className="text-[12.5px] text-muted">{c.author_name} · {fmtDate(c.valid_from)}</div>
               </div>
-              {c.supersedes && <span className="rounded-full bg-surface2 px-2.5 py-1 text-[12px]">replaces a fact</span>}
+              {c.change && <span className="rounded-full bg-surface2 px-2.5 py-1 text-[12px]">replaces a fact</span>}
             </div>
           ))}
         </Card>
