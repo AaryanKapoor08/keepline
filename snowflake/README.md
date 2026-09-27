@@ -78,8 +78,28 @@ SELECT * FROM TABLE(KEEPLINE.CORE.FACTS_AS_OF('2026-05-01'::DATE)) WHERE area_id
 
 ## Notes and limits
 
-- No live account was used while writing these assets; syntax follows docs.snowflake.com (each SQL file cites
-  the pages it relies on). `tests/test_products_snowflake.py` checks every file parses, splits and plans offline.
+- **Deployed and verified live (2026-09-27, AWS us-west-2, X-Small warehouse):**
+  - all seven SQL files run clean (`deploy.py --only sql`: 7/7);
+  - data load, including the local graph (`--only load`: 18/18);
+  - both Cortex Search services (ACTIVE, 3,475 receipts and 506 facts indexed);
+  - the risk-snapshot refresh;
+  - the semantic view and the Cortex Agent (created);
+  - Streamlit-in-Snowflake (created).
+
+  Verified by running queries: `RAP_VISIBILITY` returns 506 / 421 / 426 facts for admin / engineering / finance;
+  `APP.RISK_MAP` puts CoreLink and reconciliation at bus factor 1, dropping to 0 in the Sarah what-if; `FACTS_AS_OF`
+  and Time Travel work; `SEARCH_PREVIEW` + `AI_COMPLETE` return a cited answer. See `STAGE_DEMO.md` for the exact
+  queries and their output.
+
+  Not exercised yet:
+  - Cortex extraction (`--only extract`, which spends credits);
+  - the task graph (created suspended);
+  - Cortex Agent calls from SQL/REST;
+  - the Streamlit-in-Snowflake page in a browser.
+- Cortex Search reads change-tracked snapshot tables (`CORE.*_SEARCH_SRC`). The masking and row access policies on
+  the base tables use correlated subqueries, and Snowflake does not allow those with change tracking. DMs are
+  excluded from the snapshots. To refresh, re-run `05_search.sql`.
+- `tests/test_products_snowflake.py` checks offline that every file parses, splits and plans.
 - Cortex Search services index only public and team sources; the per-asker filter
   (`visibility = public OR owner_team = <team> OR participants contains <person>`) mirrors the row access policy.
 - The folder is deliberately *not* a Python package (no `__init__.py`): the name `snowflake` must stay a
