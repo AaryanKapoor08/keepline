@@ -1,0 +1,59 @@
+"""Dump a static JSON snapshot of every API payload into web/public/data/ so the demo UI works with the API down.
+
+Usage:  python scripts/export_web_data.py
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+import traceback
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from api import server as S  # noqa: E402
+from keepline.contracts import to_json  # noqa: E402
+
+OUT = ROOT / "web" / "public" / "data"
+
+
+def dump(name: str, fn) -> None:
+    try:
+        obj = fn()
+    except Exception as e:  # keep going; the UI shows an empty state for a missing file
+        print(f"  ! {name}: {e}")
+        traceback.print_exc(limit=1)
+        return
+    if obj is None:
+        print(f"  - {name}: not available")
+        return
+    (OUT / f"{name}.json").write_text(to_json(obj), encoding="utf-8")
+    print(f"  + {name}.json")
+
+
+def main() -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    dump("meta", S.get_meta)
+    dump("graph_org", S.get_org_graph)
+    for pid in ("sarah", "mike", "tom", "aisha"):
+        dump(f"graph_person_{pid}", lambda pid=pid: S.get_person_graph(pid))
+    for pid in ("sarah", "mike", "tom"):
+        dump(f"profile_{pid}", lambda pid=pid: S.get_profile(pid))
+        dump(f"whatif_{pid}", lambda pid=pid: S.get_whatif(pid))
+        dump(f"handoff_{pid}", lambda pid=pid: S.get_handoff(pid))
+    dump("risk", S.get_risk)
+    dump("whatif_multi", lambda: S.get_whatif_multi(["sarah", "mike", "tom"], S.date(2026, 12, 31)))
+    dump("onboarding_alex", lambda: S.get_onboarding("alex"))
+    dump("answers", lambda: {S._norm_q(q): S.do_ask(q, "alex") for q in S.DEMO_QUESTIONS})
+    dump("decisions", lambda: {S._norm_q(t): S.do_decision(t) for t in S.DEMO_DECISIONS})
+    dump("staffing", lambda: S.do_staffing(S.DEMO_BRIEF))
+    dump("demo_scripts", lambda: {"questions": S.DEMO_QUESTIONS, "decisions": S.DEMO_DECISIONS, "brief": S.DEMO_BRIEF})
+    for name in ("benchmark_dev", "benchmark_test", "reward_curve", "bandit", "training_log", "robustness"):
+        dump(name, lambda name=name: S.get_result(name))
+    print(f"snapshot -> {OUT}")
+
+
+if __name__ == "__main__":
+    main()

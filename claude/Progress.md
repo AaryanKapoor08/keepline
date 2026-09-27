@@ -20,6 +20,14 @@ Clock: started 2026-09-26 20:41. Judging 2026-09-27.
 - D · Products+App+Snowflake: paused while building the "My Knowledge" page; had been told Snowflake is live.
 - Resume: SendMessage each agent "continue" (their context is preserved), or restart from this file.
 
+## 2026-09-27 — A/B/C/D DONE, E (Next.js UI) running
+Frozen TEST split run once (commit ad1f716), N=216, keepline (calibrated default) vs plain search:
+acc w/ valid citation 43.1% vs 35.8% (N=137) · hallucination 43.6% vs 71.8% · right action 50.9% vs 28.2% ·
+routing 100% vs 57% (N=21) · current-fact 46.2% vs 25.6% (N=39) · ECE 0.053 vs 0.269 · reward −0.04 vs −1.07.
+keepline_rl (dev-selected bandit) did NOT beat default on test (−0.050 vs −0.038): over-abstains → honest finding.
+Chaos ladder (dev): plain collapses L0→L4 (acc .41→.16, halluc .66→.83); keepline degrades slowly.
+Pending: live Snowflake deploy (needs user approval), E's UI, final integration + demo script.
+
 ## Decisions
 - Local-first engine (SQLite + BM25) mirrors Snowflake schema 1:1; Snowflake assets are the deploy target.
 - Deterministic no-LLM path for every stage; Claude/Cortex optional, disk-cached (`data/cache/llm`).

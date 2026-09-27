@@ -16,7 +16,8 @@ FORBIDDEN = re.compile(r"truth_io|TRUTH_DIR|QUESTIONS_DIR|TruthFact|evidence_map
 
 def _product_files() -> list[Path]:
     files = [p for p in (ROOT / "keepline").rglob("*.py") if p.parent.name not in ALLOWED]
-    files += list((ROOT / "app").rglob("*.py"))
+    for extra in ("app", "api", "scripts"):
+        files += list((ROOT / extra).rglob("*.py"))
     skip = {ROOT / "keepline" / "contracts.py", ROOT / "keepline" / "config.py"}  # define, never read
     return [p for p in files if p not in skip]
 

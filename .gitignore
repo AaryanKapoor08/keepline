@@ -8,3 +8,7 @@ data/memory/
 .venv/
 data/results/arm_cache.json
 data/corpus_noise/
+
+# web app
+web/node_modules/
+web/.next/

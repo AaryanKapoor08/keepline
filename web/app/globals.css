@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #06080b;
+  --bg-2: #0a0e13;
+  --panel: rgba(18, 24, 31, 0.62);
+  --line: rgba(148, 180, 200, 0.12);
+  --line-2: rgba(148, 180, 200, 0.22);
+  --fg: #e8eef2;
+  --muted: #8a9aa6;
+  --dim: #5a6a75;
+  --accent: #2ee6d0;
+  --accent-2: #2ee6d0;
+  --alarm: #ff4d5e;
+  --warn: #d6b46a;
+  --ok: #3ddc97;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg2: var(--bg-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-dim: var(--dim);
+  --color-accent: var(--accent);
+  --color-accent2: var(--accent-2);
+  --color-alarm: var(--alarm);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
+  --color-line: var(--line);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--bg);
+  font-feature-settings: "tnum" 1, "cv11" 1;
+  min-height: 100vh;
+}
+
+.glass {
+  background: #0c1116;
+  border: 1px solid var(--line);
+}
+
+.glass-hover {
+  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+.glass-hover:hover {
+  border-color: var(--line-2);
+  box-shadow: none;
+}
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(148, 180, 200, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 180, 200, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+.text-gradient {
+  color: var(--fg);
+}
+.text-accent-gradient {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.kbd {
+  font-family: var(--font-geist-mono);
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0.45); }
+  70% { box-shadow: 0 0 0 14px rgba(255, 77, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0); }
+}
+.pulse-alarm { animation: pulse-ring 2s infinite; }
+
+@keyframes beam {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.beam::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(46, 230, 208, 0.5), transparent);
+  animation: beam 2.4s linear infinite;
+}
+
+@keyframes spot {
+  0% { opacity: 0; transform: translate(-72%, -62%) scale(0.5); }
+  100% { opacity: 1; transform: translate(-50%, -40%) scale(1); }
+}
+.spotlight { animation: spot 2s ease 0.4s 1 forwards; opacity: 0; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(148, 180, 200, 0.15); border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+input[type="range"] { accent-color: var(--accent); }
