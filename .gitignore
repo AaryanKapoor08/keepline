@@ -12,3 +12,23 @@ data/corpus_noise/
 # web app
 web/node_modules/
 web/.next/
+.env.*
+.vercel/
+
+# notes, plans and agent instructions (kept locally, not in the repo)
+/docs/
+/claude/
+/HANDOFF.md
+/web/AGENTS.md
+/web/CLAUDE.md
+/web/DESIGN.md
+/web/README.md
+/snowflake/README.md
+/snowflake/STAGE_DEMO.md
+
+# generated build markers and charts (regenerate with keepline.data.build / keepline.eval.charts)
+/data/READY_A.txt
+/data/results/accuracy_*.png
+/data/results/calibration_*.png
+/data/results/hallucination_*.png
+/data/results/robustness.png
