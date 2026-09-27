@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from typing import Any
 from datetime import date
 
-from keepline.contracts import AreaRisk
+from keepline.contracts import AreaRisk, FactKind
 
 from keepline.products._common import StoreLike, _safe, is_strong, people_by_id
 from keepline.products.handoff import successor
@@ -75,3 +76,84 @@ def staff_project(store: StoreLike, brief: str, team: list[str], today: date) ->
         ))
     plans.sort(key=lambda p: (p.bus_factor_before, p.area_name))
     return plans
+
+
+_ONLY = re.compile(r"\b(only|sole|nobody else|no one else|just me|that's it)\b", re.I)
+
+
+def what_breaks(store: StoreLike, person_id: str, today: date) -> list[dict[str, Any]]:
+    """Concrete things that stop working if ``person_id`` leaves today -- the headline of a what-if.
+
+    * landmines in areas nobody else holds (the rule stops being enforced by anyone)
+    * recurring tasks they state with no other holder of the area (nobody does them)
+    * vendor contacts they are the source for (the relationship walks out)
+    * access where the receipt says they are the only admin/holder
+    """
+    from keepline.products._common import citations_for, full_name, is_strong, looks_like_fact
+
+    people = people_by_id(store)
+    person = people.get(person_id)
+    first = person.name.split()[0].lower() if person else person_id
+
+    def others_hold(area_id: str | None) -> bool:
+        if not area_id:
+            return True
+        return any(is_strong(e) and e.person_id != person_id and not (people.get(e.person_id) and people[e.person_id].departure_date)
+                   for e in _safe(lambda: store.expertise(area_id=area_id)) or [])
+
+    held = {e.area_id for e in _safe(lambda: store.expertise(person_id=person_id)) or [] if is_strong(e)}
+    facts = {f.id: f for f in _safe(lambda: store.facts(person_id=person_id, current_only=True)) or []}
+    for a in held:
+        if not others_hold(a):
+            for f in _safe(lambda: store.facts(area_id=a, kinds=[FactKind.LANDMINE], current_only=True)) or []:
+                facts.setdefault(f.id, f)
+
+    out: list[dict[str, Any]] = []
+    for f in facts.values():
+        if not looks_like_fact(f.text):
+            continue
+        typ, why = None, ""
+        if f.kind == FactKind.LANDMINE and f.area_id in held and not others_hold(f.area_id):
+            typ, why = "orphaned_landmine", "Nobody left holds this area to enforce the rule."
+        elif f.kind == FactKind.RECURRING_TASK and not others_hold(f.area_id):
+            typ, why = "unowned_recurring_task", "No remaining holder of the area does this."
+        elif f.kind == FactKind.VENDOR_CONTACT and f.stated_by == person_id:
+            typ, why = "vendor_contact_lost", "They are the source for this vendor relationship."
+        elif f.kind in (FactKind.ACCESS, FactKind.OWNER) and _ONLY.search(f.text) and (
+                first in f.text.lower() or (f.stated_by == person_id and re.search(r"\b(i'm|i am|me|my)\b", f.text, re.I))):
+            typ, why = "sole_access", "The receipt says they are the only one with this access."
+        if typ is None:
+            continue
+        cit = next(iter(citations_for(store, f, limit=1)), None)
+        area = _safe(lambda: store.area(f.area_id)) if f.area_id else None
+        out.append({
+            "type": typ, "why": why, "fact_id": f.id, "text": f.text, "kind": str(f.kind),
+            "area_id": f.area_id, "area_name": area.name if area else None,
+            "stated_by": f.stated_by, "stated_by_name": full_name(store, f.stated_by) if f.stated_by else None,
+            "date": f.valid_from.isoformat(), "quote": cit.quote if cit else f.quote,
+            "doc_id": cit.doc_id if cit else None, "url": cit.url if cit else "",
+        })
+    order = ["sole_access", "orphaned_landmine", "vendor_contact_lost", "unowned_recurring_task"]
+    out.sort(key=lambda x: (order.index(x["type"]), x["area_id"] or "", x["fact_id"]))
+    return out
+
+
+def what_if_report(store: StoreLike, person_id: str, today: date) -> dict[str, Any]:
+    """JSON-ready what-if: before/after risk per area, newly orphaned areas, and the what-breaks list."""
+    from keepline.contracts import to_dict
+
+    before, after = what_if_leaves(store, person_id, today)
+    breaks = what_breaks(store, person_id, today)
+    counts: dict[str, int] = {}
+    for b in breaks:
+        counts[b["type"]] = counts.get(b["type"], 0) + 1
+    return {
+        "person_id": person_id,
+        "today": today.isoformat(),
+        "before": to_dict(before),
+        "after": to_dict(after),
+        "orphaned_areas": newly_orphaned(before, after),
+        "breaks": breaks,
+        "break_counts": counts,
+        "note": "Planning aid for managers. Never tied to performance.",
+    }
