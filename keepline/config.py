@@ -10,6 +10,20 @@ from pathlib import Path
 ROOT = Path(os.environ.get("KEEPLINE_ROOT", Path(__file__).resolve().parent.parent))
 DATA = ROOT / "data"
 
+
+def _load_dotenv(path: Path) -> None:
+    """Minimal .env loader (KEY=VALUE lines); real environment variables always win."""
+    if not path.exists():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_dotenv(ROOT / ".env")
+
 # Product world (a real deployment would have these)
 ORG_DIR = DATA / "org"  # people.json, areas.json
 CORPUS_DIR = DATA / "corpus"  # slack.jsonl, email.jsonl, tickets.jsonl, docs.jsonl

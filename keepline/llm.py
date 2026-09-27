@@ -2,8 +2,10 @@
 
 Resolution order for ``provider="auto"``:
   1. Anthropic API (``anthropic`` SDK) if credentials resolve (ANTHROPIC_API_KEY / ``ant auth login`` profile)
-  2. Snowflake Cortex ``AI_COMPLETE`` if SNOWFLAKE_ACCOUNT is set
-  3. ``None`` -> callers must use their deterministic fallback (every pipeline stage has one)
+  2. ``None``
+Snowflake Cortex ``AI_COMPLETE`` is used only when explicitly requested (``KEEPLINE_LLM=cortex``) because it
+spends credits.
+  -> with no provider, ``None`` -> callers must use their deterministic fallback (every pipeline stage has one)
 
 Every response is cached under ``data/cache/llm/<sha256>.json`` keyed by (model, system, prompt, schema), so a
 demo re-run or benchmark re-run is free and works offline. ``KEEPLINE_OFFLINE=1`` means "cache hits only".
@@ -162,7 +164,8 @@ def get_llm() -> LLMClient | None:
     try:
         if provider in ("anthropic", "auto") and (provider == "anthropic" or _anthropic_available()):
             return AnthropicClient()
-        if provider in ("cortex", "auto") and (provider == "cortex" or os.environ.get("SNOWFLAKE_ACCOUNT")):
+        # Cortex spends Snowflake credits, so it is opt-in only (KEEPLINE_LLM=cortex), never picked by "auto".
+        if provider == "cortex":
             return CortexClient()
     except Exception as exc:  # noqa: BLE001 -- any provider init failure degrades to deterministic mode
         log.warning("LLM provider init failed (%s); falling back to deterministic pipeline", exc)
