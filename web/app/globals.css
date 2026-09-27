@@ -1,64 +1,89 @@
 @import "tailwindcss";
 
-:root, :root[data-theme="harbour"] {
-  --outer: #EAE6DD;
-  --canvas: #F5F3EE;
-  --surface-2: #F3F0EA;
-  --surface-3: #EBE7DF;
-  --flow: #FAF8F4;
-  --fg: #15171C;
-  --muted: #6B6F76;
-  --dim: #8C8F95;
-  --line: #E7E3DA;
-  --line-2: #E7E3DA;
-  --sig: #1D4ED8;
-  --sig-deep: #1E40AF;
-  --sig-tint: #E9EFFC;
-  --accent: #1D4ED8;
-  --alarm: #E5484D;
-  --alarm-tint: #FDECEC;
+/* ------------------------------------------------------------------------------------------------
+   Keepline palette: "graphite" (apple.com-style greys and soft off-whites).
+   Every color in the app resolves to one of these tokens. Tweak here, nothing else needs to change.
+   Alternate palette: ?theme=starlight (warmer off-whites). ?theme=graphite resets.
+   ------------------------------------------------------------------------------------------------ */
+:root, :root[data-theme="graphite"] {
+  /* surfaces */
+  --outer: #f5f5f7;          /* page background */
+  --canvas: #f5f5f7;         /* app canvas (same as page: full-bleed) */
+  --panel: #ffffff;          /* cards */
+  --surface-2: #f5f5f7;      /* inset fills inside white cards, idle pills */
+  --surface-3: #e8e8ed;      /* hover for inset fills */
+  --flow: #fafafc;           /* diagram canvases */
+  --nav: rgba(245, 245, 247, 0.8); /* frosted top nav */
+  --ink: #1d1d1f;            /* dark bands / dark cards */
+  --ink-2: #2c2c2e;          /* raised fill on dark */
+
+  /* text */
+  --fg: #1d1d1f;
+  --muted: #6e6e73;
+  --dim: #86868b;
+  --faint: #aeaeb2;          /* units, glyphs, arrows */
+
+  /* hairlines */
+  --line: #e5e5ea;           /* row dividers, card borders */
+  --line-2: #d2d2d7;         /* stronger hairline, node borders */
+
+  /* accent = graphite. Primary buttons, active states, "Keepline" series */
+  --sig: #1d1d1f;
+  --sig-deep: #424245;       /* hover */
+  --sig-tint: #ececf0;       /* selected / soft highlight */
+  --accent: #1d1d1f;
+  --accent-2: #6e6e73;
+
+  /* semantic, muted */
+  --alarm: #c4372d;          /* high risk, "confidently wrong", only-one-person */
+  --alarm-deep: #8c2a22;
+  --alarm-tint: #f9ecea;
+  --warn: #a8690f;           /* medium risk */
+  --warn-tint: #f7efe1;
+  --ok: #2f7a4d;             /* low risk, done, correct */
+  --ok-tint: #e8f2eb;
+
+  /* charts and diagrams: greyscale ramp + graphite */
+  --chart-1: #1d1d1f;
+  --chart-2: #8e8e93;
+  --chart-3: #c7c7cc;
+  --chart-grid: rgba(0, 0, 0, 0.06);
+  --chart-axis: #86868b;
+  --edge: #aeaeb2;
+  --edge-soft: #c7c7cc;
+  --dots: #d8d8dd;
+
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
 }
-:root[data-theme="evergreen"] {
-  --outer: #E7E9E1;
-  --canvas: #F3F4EE;
-  --surface-2: #F1F2EC;
-  --surface-3: #E8EAE2;
-  --flow: #F8F9F5;
-  --fg: #14171A;
-  --muted: #6A6F6C;
-  --dim: #8A8F8C;
-  --line: #E3E5DC;
-  --line-2: #E3E5DC;
-  --sig: #1F5C45;
-  --sig-deep: #184A37;
-  --sig-tint: #E4EFE8;
-  --accent: #1F5C45;
-  --alarm: #D4553B;
-  --alarm-tint: #FBEAE5;
+:root[data-theme="starlight"] {
+  --outer: #f4f3f0;
+  --canvas: #f4f3f0;
+  --surface-2: #f4f3f0;
+  --surface-3: #e9e7e2;
+  --flow: #faf9f7;
+  --nav: rgba(244, 243, 240, 0.8);
+  --ink: #232220;
+  --ink-2: #33312e;
+  --fg: #1f1e1c;
+  --muted: #706d68;
+  --dim: #8a8781;
+  --line: #e6e3dd;
+  --line-2: #d6d2ca;
+  --sig: #232220;
+  --sig-deep: #46433f;
+  --sig-tint: #edebe6;
+  --accent: #232220;
+  --chart-1: #232220;
+  --chart-2: #938f88;
+  --chart-3: #cac6be;
+  --dots: #dbd7cf;
 }
-:root[data-theme="violet"] {
-  --outer: #E9E9EE;
-  --canvas: #F4F4F6;
-  --surface-2: #F2F2F5;
-  --surface-3: #E9E9EF;
-  --flow: #F9F9FB;
-  --fg: #16161D;
-  --muted: #6C6C78;
-  --dim: #8C8C96;
-  --line: #E6E6EC;
-  --line-2: #E6E6EC;
-  --sig: #5B4FE9;
-  --sig-deep: #4B3FD6;
-  --sig-tint: #EEEDFD;
-  --accent: #5B4FE9;
-  --alarm: #E5484D;
-  --alarm-tint: #FDECEC;
-}
-:root { --bg: #ffffff; --panel: #ffffff; --warn: var(--muted); --ok: #1f9d55; }
+:root { --bg: #ffffff; }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-bg2: var(--surface-2);
+  --color-panel: var(--panel);
   --color-sig: var(--sig);
   --color-sigdeep: var(--sig-deep);
   --color-sigtint: var(--sig-tint);
@@ -66,17 +91,24 @@
   --color-surface3: var(--surface-3);
   --color-outer: var(--outer);
   --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink-2);
   --color-alarmtint: var(--alarm-tint);
+  --color-alarmdeep: var(--alarm-deep);
+  --color-warntint: var(--warn-tint);
+  --color-oktint: var(--ok-tint);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-dim: var(--dim);
+  --color-faint: var(--faint);
   --color-accent: var(--accent);
   --color-accent2: var(--accent-2);
   --color-alarm: var(--alarm);
   --color-warn: var(--warn);
   --color-ok: var(--ok);
   --color-line: var(--line);
-  --font-sans: var(--font-hanken), "Helvetica Neue", Arial, sans-serif;
+  --color-line2: var(--line-2);
+  --font-sans: var(--font-system);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -85,49 +117,24 @@ body {
   background: var(--outer);
   font-size: 16px;
   color: var(--fg);
-  font-family: var(--font-hanken), "Helvetica Neue", Arial, sans-serif;
-  letter-spacing: -0.005em;
+  font-family: var(--font-system);
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background: var(--outer);
   font-size: 16px;
-  font-feature-settings: "tnum" 1, "cv11" 1;
+  font-feature-settings: "tnum" 1;
   min-height: 100vh;
 }
 
+::selection { background: rgba(29, 29, 31, 0.14); }
+
 .glass {
-  background: #ffffff;
+  background: var(--panel);
   border: 1px solid transparent;
-}
-.on-white .glass { background: #f5f5f7; }
-
-.glass-hover {
-  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
-}
-.glass-hover:hover {
-  border-color: var(--line-2);
-  box-shadow: none;
-}
-
-.grid-bg { display: none; }
-.grid-bg-unused {
-  background-image:
-    linear-gradient(rgba(148, 180, 200, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 180, 200, 0.05) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-}
-
-.text-gradient {
-  color: var(--fg);
-}
-.text-accent-gradient {
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
 }
 
 .kbd {
@@ -136,55 +143,30 @@ body {
   padding: 1px 6px;
   border-radius: 5px;
   border: 1px solid var(--line-2);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--panel);
   color: var(--muted);
 }
 
-@keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0.45); }
-  70% { box-shadow: 0 0 0 14px rgba(255, 77, 94, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0); }
-}
-.pulse-alarm { }
-
-@keyframes beam {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-.beam::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(46, 230, 208, 0.5), transparent);
-  animation: beam 2.4s linear infinite;
-}
-
-@keyframes spot {
-  0% { opacity: 0; transform: translate(-72%, -62%) scale(0.5); }
-  100% { opacity: 1; transform: translate(-50%, -40%) scale(1); }
-}
-.spotlight { animation: spot 2s ease 0.4s 1 forwards; opacity: 0; }
-
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: rgba(148, 180, 200, 0.15); border-radius: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.14); border-radius: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
-input[type="range"] { accent-color: var(--accent); }
+input[type="range"] { accent-color: var(--sig); }
 
-.apple-link { color: #0066cc; }
-.apple-link:hover { text-decoration: underline; }
-.headline { font-weight: 600; letter-spacing: -0.022em; line-height: 1.05; }
-.pill { display:inline-flex; align-items:center; gap:6px; border-radius:980px; padding:11px 22px; font-size:17px; line-height:1; transition: background .2s, color .2s; }
-.pill-blue { background:#0071e3; color:#fff; } .pill-blue:hover { background:#0077ed; }
-.pill-outline { border:1px solid #0071e3; color:#0071e3; } .pill-outline:hover { background:#0071e3; color:#fff; }
-.dark-section .pill-outline { border-color:#2997ff; color:#2997ff; }
+.headline { font-weight: 600; letter-spacing: -0.028em; line-height: 1.05; }
 
-.btn-primary { display:inline-flex; align-items:center; gap:8px; height:52px; padding:0 26px; border-radius:999px; background:var(--sig); color:#fff; font-size:16px; font-weight:500; transition: background .2s; }
+/* Primary pill button (Apple-style, graphite) */
+.btn-primary { display:inline-flex; align-items:center; gap:8px; height:46px; padding:0 24px; border-radius:999px; background:var(--sig); color:#fff; font-size:15px; font-weight:500; letter-spacing:-0.01em; transition: background .2s, transform .2s; }
 .btn-primary:hover { background:var(--sig-deep); }
+.btn-primary:active { transform: scale(0.98); }
 .btn-primary:disabled { opacity:.5; }
-.hatch { background: repeating-linear-gradient(135deg, var(--line) 0 2px, var(--surface-2) 2px 7px); }
-.react-flow__controls { box-shadow:none !important; border-radius:12px; overflow:hidden; border:1px solid #ececec; }
-.react-flow__controls-button { background:#fff !important; border-bottom:1px solid #ececec !important; }
-.react-flow__edge-textbg { fill:#f4f5f7; }
 
-.shadow-card { box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 1px rgba(16,24,40,.03); }
+/* Secondary series in bar comparisons: soft diagonal hatch in the grey ramp */
+.hatch { background: repeating-linear-gradient(135deg, var(--line-2) 0 2px, var(--surface-2) 2px 7px); }
+
+.react-flow__controls { box-shadow:none !important; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+.react-flow__controls-button { background:var(--panel) !important; border-bottom:1px solid var(--line) !important; fill: var(--muted) !important; }
+.react-flow__controls-button:hover { background:var(--surface-2) !important; }
+.react-flow__edge-textbg { fill: var(--flow); }
+
+.shadow-card { box-shadow: 0 1px 2px rgba(0,0,0,.03); }

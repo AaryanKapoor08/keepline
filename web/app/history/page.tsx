@@ -26,7 +26,7 @@ function Diff({ d, asOf }: { d: any; asOf: string }) {
       </div>
       <div className={cn("flex gap-3 px-4 py-2", happened ? "bg-alarmtint" : "bg-white")}>
         <span className="text-muted">{happened ? "−" : " "}</span>
-        <span className={happened ? "text-[#8a2a22]" : ""}>{cleanFact(d.old.message)}</span>
+        <span className={happened ? "text-alarmdeep" : ""}>{cleanFact(d.old.message)}</span>
       </div>
       {happened && (
         <div className="flex gap-3 bg-sigtint px-4 py-2">

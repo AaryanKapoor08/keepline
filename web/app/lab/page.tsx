@@ -31,7 +31,11 @@ export default function LabPage() {
   const [t, setT] = useState<number | null>(null);
   const S = bt?.systems;
   const rows: any[] = log?.rows ?? [];
-  const SIG = cssVar("--sig", "#1D4ED8");
+  const SIG = cssVar("--chart-1", "#1d1d1f");
+  const C2 = cssVar("--chart-2", "#8e8e93");
+  const C3 = cssVar("--chart-3", "#c7c7cc");
+  const AXIS = cssVar("--chart-axis", "#86868b");
+  const GRID = cssVar("--chart-grid", "rgba(0,0,0,0.06)");
 
   useEffect(() => {
     if (t === null) return;
@@ -122,7 +126,7 @@ export default function LabPage() {
         <Card title="Its confidence means something" right={<span className="text-[13px] text-muted">test split · calibration</span>}>
           <div className="flex items-end gap-8">
             <div>
-              <div className="text-[56px] font-medium leading-none tracking-[-0.03em] text-[var(--sig)]">{val(S?.keepline?.ece)?.toFixed(2) ?? "—"}</div>
+              <div className="text-[56px] font-semibold leading-none tracking-[-0.035em] text-fg">{val(S?.keepline?.ece)?.toFixed(2) ?? "—"}</div>
               <div className="mt-1 text-[13px] text-muted">Keepline calibration error</div>
             </div>
             <div>
@@ -133,18 +137,18 @@ export default function LabPage() {
           <div className="mt-5 h-[250px] rounded-[18px] bg-surface2 p-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart margin={{ top: 8, right: 12, left: -18, bottom: 4 }}>
-                <CartesianGrid stroke="rgba(0,0,0,0.05)" />
-                <XAxis dataKey="x" type="number" domain={[0.3, 0.9]} tickFormatter={(v) => `${Math.round(v * 100)}%`} tick={{ fontSize: 11, fill: "#8C8F95" }} axisLine={false} tickLine={false} />
-                <YAxis type="number" domain={[0, 1]} tickFormatter={(v) => `${Math.round(v * 100)}%`} tick={{ fontSize: 11, fill: "#8C8F95" }} axisLine={false} tickLine={false} />
-                <ReferenceLine segment={[{ x: 0.3, y: 0.3 }, { x: 0.9, y: 0.9 }]} stroke="#B8B4AB" strokeDasharray="4 4" />
-                <Line data={pb} dataKey="y" stroke="#9A9EA5" strokeWidth={1.5} dot={{ r: 3 }} isAnimationActive={false} />
-                <Line data={kb} dataKey="y" stroke={SIG} strokeWidth={2} dot={{ r: 3.5 }} isAnimationActive={false} />
+                <CartesianGrid stroke={GRID} />
+                <XAxis dataKey="x" type="number" domain={[0.3, 0.9]} tickFormatter={(v) => `${Math.round(v * 100)}%`} tick={{ fontSize: 11, fill: AXIS }} axisLine={false} tickLine={false} />
+                <YAxis type="number" domain={[0, 1]} tickFormatter={(v) => `${Math.round(v * 100)}%`} tick={{ fontSize: 11, fill: AXIS }} axisLine={false} tickLine={false} />
+                <ReferenceLine segment={[{ x: 0.3, y: 0.3 }, { x: 0.9, y: 0.9 }]} stroke={C3} strokeDasharray="4 4" />
+                <Line data={pb} dataKey="y" stroke={C2} strokeWidth={1.5} dot={{ r: 3, fill: C2, stroke: C2 }} isAnimationActive={false} />
+                <Line data={kb} dataKey="y" stroke={SIG} strokeWidth={2} dot={{ r: 3.5, fill: SIG, stroke: SIG }} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-3 flex flex-wrap gap-4 text-[12.5px] text-muted">
             <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-sig" /> Keepline</span>
-            <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-[#9A9EA5]" /> Plain search</span>
+            <span className="flex items-center gap-1.5"><span className="h-0.5 w-4 bg-[var(--chart-2)]" /> Plain search</span>
             <span>dashed = perfectly calibrated. When Keepline says 60%, it&apos;s right about 60% of the time.</span>
           </div>
         </Card>
@@ -155,13 +159,13 @@ export default function LabPage() {
           <Card title="How it learns" right={<span className="text-[13px] text-muted">{t === null ? "" : `training replay · step ${r?.step ?? 0} of ${log?.n ?? ""}`}</span>}>
             <Flow nodes={nodes} edges={edges} height={260} />
           </Card>
-          <Card title="Training reward" right={<span className="text-[13px] text-muted">blue = bandit · gray = fixed default</span>}>
+          <Card title="Training reward" right={<span className="text-[13px] text-muted">dark = bandit · light gray = fixed default</span>}>
             <div className="h-[150px] rounded-[18px] bg-surface2 p-3">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={t === null ? series : shown} margin={{ top: 4, right: 4, left: -30, bottom: -8 }}>
                   <XAxis dataKey="i" hide type="number" domain={[0, Math.max(1, series.length - 1)]} />
-                  <YAxis domain={[-1, 1.2]} tick={{ fontSize: 10, fill: "#8C8F95" }} axisLine={false} tickLine={false} />
-                  <Line dataKey="def" stroke="#C7C3BA" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                  <YAxis domain={[-1, 1.2]} tick={{ fontSize: 10, fill: AXIS }} axisLine={false} tickLine={false} />
+                  <Line dataKey="def" stroke={C3} strokeWidth={1.5} dot={false} isAnimationActive={false} />
                   <Line dataKey="bandit" stroke={SIG} strokeWidth={1.5} dot={false} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>

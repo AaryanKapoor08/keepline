@@ -65,7 +65,7 @@ export default function ClosePage() {
         </Card>
         <Card title="Pricing" right={<Details onClick={() => setPrice(!price)} open={price}>{price ? "Less" : "Market"}</Details>}>
           <div className="flex items-end gap-3">
-            <span className="text-[48px] font-medium leading-none tracking-[-0.03em]"><span className="text-[#b0b0b8]">$</span>8–20</span>
+            <span className="text-[48px] font-medium leading-none tracking-[-0.03em]"><span className="text-faint">$</span>8–20</span>
             <span className="pb-1 text-[14px] text-muted">per user / month<br />+ handoff pack per departure</span>
           </div>
           <div className="mt-3 text-[14px] text-muted">Starts with a free knowledge risk scan.</div>

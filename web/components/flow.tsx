@@ -8,6 +8,7 @@ import {
   Bot, Split, HelpCircle, SlidersHorizontal, Dices, Scale, Trophy, Check, Server, Lock, Globe,
 } from "lucide-react";
 import { cn } from "./ui";
+import { cssVar } from "@/lib/data";
 
 export const ICONS: Record<string, any> = {
   user: User, db: Database, key: KeyRound, mine: TriangleAlert, repeat: Repeat, contact: Contact, owner: UserCheck, history: History,
@@ -30,7 +31,7 @@ function N8nNode({ data }: NodeProps) {
   const d = data as unknown as FlowNode & { selected?: boolean };
   const I = ICONS[d.icon] ?? Database;
   const border =
-    d.state === "risk" ? "border-alarm" : d.state === "done" ? "border-[#1f9d55]" : d.state === "running" ? "border-sig" : "border-[#d9d9de]";
+    d.state === "risk" ? "border-alarm" : d.state === "done" ? "border-ok" : d.state === "running" ? "border-sig" : "border-line2";
   return (
     <div className={cn("flex w-[150px] flex-col items-center transition-opacity duration-500", d.state === "dim" && "opacity-35")}>
       <div
@@ -39,18 +40,18 @@ function N8nNode({ data }: NodeProps) {
           d.wide ? "w-[120px]" : "w-[84px]",
           d.trigger ? "rounded-l-[42px] rounded-r-[14px]" : "rounded-[14px]",
           border,
-          d.state === "running" && "shadow-[0_0_0_4px_rgba(17,17,17,0.08)]",
-          d.selected && "ring-2 ring-[#111]/15",
+          d.state === "running" && "shadow-[0_0_0_5px_rgba(0,0,0,0.06)]",
+          d.selected && "ring-2 ring-black/15",
         )}
       >
-        <Handle type="target" position={Position.Left} className="!h-2.5 !w-2.5 !border-2 !border-[#b0b0b8] !bg-white" />
-        <I className={cn("h-8 w-8", d.state === "risk" ? "text-alarm" : "text-[#1d1d1f]")} strokeWidth={1.4} />
+        <Handle type="target" position={Position.Left} className="!h-2.5 !w-2.5 !border-2 !border-faint !bg-white" />
+        <I className={cn("h-8 w-8", d.state === "risk" ? "text-alarm" : "text-fg")} strokeWidth={1.4} />
         {d.state === "done" && (
-          <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#1f9d55] text-white">
+          <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-ok text-white">
             <Check className="h-3 w-3" strokeWidth={3} />
           </span>
         )}
-        <Handle type="source" position={Position.Right} className="!h-2.5 !w-2.5 !border-2 !border-[#b0b0b8] !bg-white" />
+        <Handle type="source" position={Position.Right} className="!h-2.5 !w-2.5 !border-2 !border-faint !bg-white" />
       </div>
       <div className="mt-2 text-center text-[15px] font-medium leading-tight text-fg">{d.label}</div>
       {d.sub && <div className={cn("mt-0.5 line-clamp-2 text-center text-[13px] leading-tight", d.state === "risk" ? "text-alarm" : "text-muted")}>{d.sub}</div>}
@@ -80,6 +81,7 @@ export default function Flow({ nodes, edges, height = 520, onNodeClick, selected
     const p = pos.find((x) => x.id === n.id)!;
     return { id: n.id, type: "n8n", position: { x: p.x, y: p.y }, data: { ...n, selected: selected === n.id } as any, draggable: true };
   });
+  const EDGE = cssVar("--edge", "#aeaeb2"), SOFT = cssVar("--edge-soft", "#c7c7cc"), MUTED = cssVar("--muted", "#6e6e73"), DOTS = cssVar("--dots", "#d8d8dd");
   const rfEdges: Edge[] = edges.map((e, i) => ({
     id: `e${i}`,
     source: e.s,
@@ -87,10 +89,10 @@ export default function Flow({ nodes, edges, height = 520, onNodeClick, selected
     type: e.back ? "smoothstep" : "default",
     label: e.label,
     animated: false,
-    style: { stroke: e.back ? "#c7c7cc" : "#b0b0b8", strokeWidth: 1.5, strokeDasharray: e.dashed || e.back ? "5 4" : undefined },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#b0b0b8", width: 16, height: 16 },
-    labelStyle: { fontSize: 13, fill: "#6e6e73", fontFamily: "var(--font-hanken)" },
-    labelBgStyle: { fill: "#f4f5f7" },
+    style: { stroke: e.back ? SOFT : EDGE, strokeWidth: 1.5, strokeDasharray: e.dashed || e.back ? "5 4" : undefined },
+    markerEnd: { type: MarkerType.ArrowClosed, color: EDGE, width: 16, height: 16 },
+    labelStyle: { fontSize: 13, fill: MUTED, fontFamily: "var(--font-system)" },
+    labelBgStyle: { fill: "var(--flow)" },
     labelBgPadding: [6, 3] as [number, number],
     labelBgBorderRadius: 6,
   }));
@@ -109,7 +111,7 @@ export default function Flow({ nodes, edges, height = 520, onNodeClick, selected
         onNodeClick={(_, n) => onNodeClick?.(n.id)}
         nodesConnectable={false}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="#d4d4d8" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color={DOTS} />
         <Controls position="bottom-left" showInteractive={false} />
       </ReactFlow>
     </div>

@@ -32,3 +32,4 @@ web/.next/
 /data/results/calibration_*.png
 /data/results/hallucination_*.png
 /data/results/robustness.png
+/DEMO_SCRIPT.md

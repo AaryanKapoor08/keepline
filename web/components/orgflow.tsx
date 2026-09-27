@@ -30,8 +30,8 @@ function PersonNode({ data }: NodeProps) {
   const d = data as any;
   const ini = String(d.name).split(" ").map((x: string) => x[0]).join("").slice(0, 2);
   return (
-    <div className={cn("flex h-[62px] w-[230px] cursor-pointer items-center gap-3 rounded-[16px] border bg-white px-3 transition-all", d.selected ? "border-sig shadow-[0_0_0_3px_rgba(17,17,17,0.08)]" : d.tag ? "border-alarm" : "border-[var(--line)] hover:border-[#b0b0b8]", d.dim && "opacity-20")}>
-      <Handle type="source" position={d.side === "L" ? Position.Right : Position.Left} className="!h-2 !w-2 !border-2 !border-[#b0b0b8] !bg-white" />
+    <div className={cn("flex h-[62px] w-[230px] cursor-pointer items-center gap-3 rounded-[16px] border bg-white px-3 transition-all", d.selected ? "border-sig shadow-[0_0_0_4px_rgba(0,0,0,0.07)]" : d.tag ? "border-alarm" : "border-[var(--line)] hover:border-line2", d.dim && "opacity-20")}>
+      <Handle type="source" position={d.side === "L" ? Position.Right : Position.Left} className="!h-2 !w-2 !border-2 !border-faint !bg-white" />
       <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-medium", d.leaving ? "bg-sig text-white" : "bg-surface2 text-fg")}>{ini}</span>
       <div className="min-w-0">
         <div className="truncate text-[14px] font-medium leading-tight">{d.name}</div>
@@ -46,15 +46,15 @@ function PersonNode({ data }: NodeProps) {
 function AreaNode({ data }: NodeProps) {
   const d = data as any;
   return (
-    <div className={cn("relative flex h-[48px] w-[210px] cursor-pointer items-center gap-2.5 rounded-[14px] border-2 bg-white px-3 transition-opacity duration-500", d.bf1 ? "border-alarm" : "border-[#d9d9de]", d.lit && "shadow-[0_0_0_4px_rgba(17,17,17,0.07)]", d.dim && "opacity-20")}>
+    <div className={cn("relative flex h-[48px] w-[210px] cursor-pointer items-center gap-2.5 rounded-[14px] border-2 bg-white px-3 transition-opacity duration-500", d.bf1 ? "border-alarm" : "border-line2", d.lit && "shadow-[0_0_0_5px_rgba(0,0,0,0.06)]", d.dim && "opacity-20")}>
       {d.rules ? <span className="absolute -right-3 -top-3 rounded-full bg-alarm px-2 py-0.5 text-[11px] font-medium text-white">{d.rules} rules</span> : null}
-      <Handle id="l" type="target" position={Position.Left} className="!h-2 !w-2 !border-2 !border-[#b0b0b8] !bg-white" />
+      <Handle id="l" type="target" position={Position.Left} className="!h-2 !w-2 !border-2 !border-faint !bg-white" />
       <Database className={cn("h-4 w-4 shrink-0", d.bf1 ? "text-alarm" : "text-fg")} strokeWidth={1.6} />
       <div className="min-w-0">
         <div className="truncate text-[13px] font-medium leading-tight">{d.label}</div>
         <div className={cn("text-[12px] leading-tight", d.bf1 ? "text-alarm" : "text-muted")}>{d.bf1 ? "only 1 person knows it" : `${d.bf} people know it`}</div>
       </div>
-      <Handle id="r" type="target" position={Position.Right} className="!h-2 !w-2 !border-2 !border-[#b0b0b8] !bg-white" />
+      <Handle id="r" type="target" position={Position.Right} className="!h-2 !w-2 !border-2 !border-faint !bg-white" />
     </div>
   );
 }
@@ -68,7 +68,7 @@ const SHORT: Record<string, string> = {
 export type SimOverlay = { areas: string[]; people: string[]; tags: Record<string, string>; rules: Record<string, number>; pairs: { p: string; a: string; label: string }[] };
 
 export default function OrgFlow({ people, risk, selected, focusTeam, onPerson, sim, onArea, height = 560 }: { people: any[]; risk: any[]; selected?: string | null; focusTeam?: string | null; onPerson: (id: string) => void; sim?: SimOverlay | null; onArea?: (id: string) => void; height?: number }) {
-  const SIG = cssVar("--sig", "#1D4ED8");
+  const SIG = cssVar("--chart-1", "#1d1d1f"), SOFT = cssVar("--edge-soft", "#c7c7cc"), DOTS = cssVar("--dots", "#d8d8dd"), PANEL = cssVar("--panel", "#ffffff");
   const nodes: Node[] = [];
   const pos: Record<string, { x: number; y: number; side: "L" | "R" }> = {};
   const colY = { L: 0, R: 0 };
@@ -109,8 +109,8 @@ export default function OrgFlow({ people, risk, selected, focusTeam, onPerson, s
     const dim = sim ? !(sim.areas.includes(s.a) && sim.people.includes(s.p)) : focusTeam && people.find((p) => p.id === s.p)?.team !== focusTeam;
     return {
       id: `e${i}`, source: s.p, target: `a:${s.a}`, targetHandle: pos[s.p].side === "L" ? "l" : "r", type: "default",
-      style: { stroke: on || (sim && !dim) ? SIG : "#c7c7cc", strokeWidth: on || (sim && !dim) ? 2 : 1.4, opacity: dim ? 0.15 : 1, transition: "opacity .6s" },
-      markerEnd: { type: MarkerType.ArrowClosed, color: on ? SIG : "#c7c7cc", width: 14, height: 14 },
+      style: { stroke: on || (sim && !dim) ? SIG : SOFT, strokeWidth: on || (sim && !dim) ? 2 : 1.4, opacity: dim ? 0.15 : 1, transition: "opacity .6s" },
+      markerEnd: { type: MarkerType.ArrowClosed, color: on ? SIG : SOFT, width: 14, height: 14 },
     };
   });
   for (const [i, pr] of (sim?.pairs ?? []).entries()) {
@@ -118,7 +118,7 @@ export default function OrgFlow({ people, risk, selected, focusTeam, onPerson, s
     edges.push({
       id: `pair${i}`, source: pr.p, target: `a:${pr.a}`, targetHandle: pos[pr.p].side === "L" ? "l" : "r", type: "default", label: pr.label,
       style: { stroke: SIG, strokeWidth: 1.8, strokeDasharray: "6 5" }, animated: true,
-      labelStyle: { fontSize: 12, fill: SIG, fontWeight: 500 }, labelBgStyle: { fill: "#ffffff" }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
+      labelStyle: { fontSize: 12, fill: SIG, fontWeight: 500 }, labelBgStyle: { fill: PANEL }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
       markerEnd: { type: MarkerType.ArrowClosed, color: SIG, width: 14, height: 14 },
     });
   }
@@ -137,7 +137,7 @@ export default function OrgFlow({ people, risk, selected, focusTeam, onPerson, s
         nodesConnectable={false}
         onNodeClick={(_, n) => (n.type === "person" ? onPerson(n.id) : n.type === "area" ? onArea?.(n.id.slice(2)) : null)}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="#d4d4d8" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color={DOTS} />
         <Controls position="bottom-left" showInteractive={false} />
       </ReactFlow>
     </div>

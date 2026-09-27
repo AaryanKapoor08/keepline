@@ -82,7 +82,7 @@ function Item({ it, st, set, checked, toggle }: { it: any; st?: St; set: (s: St 
       <div className="rounded-[16px] border border-[var(--line)] p-4">
         <Source src={it.source} quote={it.quote} />
       </div>
-      <div className="flex h-full items-center justify-center text-[#b0b0b8]"><ArrowRight className="h-5 w-5" strokeWidth={1.5} /></div>
+      <div className="flex h-full items-center justify-center text-faint"><ArrowRight className="h-5 w-5" strokeWidth={1.5} /></div>
       <div className="flex h-full flex-col rounded-[16px] bg-surface2 p-4">
         <div className="flex items-center justify-between">
           <span className={cn("rounded-full bg-white px-2.5 py-1 text-[12px]", it.kind === "landmine" && "text-alarm")}>{KIND[it.kind] ?? it.kind}</span>
@@ -146,7 +146,7 @@ export default function ReviewPage() {
   };
   const total = visible.reduce((n, [, v]) => n + v.length, 0);
   const chip = (id: string, label: string, Icon: any, on: boolean, locked?: string) => (
-    <button key={id} disabled={!!locked} onClick={() => setSrc({ ...src, [id]: !on })} title={locked} className={cn("flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors", on ? "bg-white" : "bg-transparent text-muted ring-1 ring-[#dcdce0]", locked && "cursor-not-allowed")}>
+    <button key={id} disabled={!!locked} onClick={() => setSrc({ ...src, [id]: !on })} title={locked} className={cn("flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors", on ? "bg-white" : "bg-transparent text-muted ring-1 ring-line2", locked && "cursor-not-allowed")}>
       <Icon className="h-4 w-4" strokeWidth={1.6} /> {label} <span className={cn("text-[12.5px]", on ? "text-fg" : "text-muted")}>{locked ?? (on ? "on" : "off")}</span>
     </button>
   );

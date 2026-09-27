@@ -13,10 +13,10 @@ export function PageTop({ title, action, onAction, actionHref, sub, chips, right
     <div className="mb-6">
       <div className="flex items-end justify-between gap-6">
         <div>
-          <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }} className="text-[42px] font-medium leading-[1.1] tracking-[-0.02em]">
+          <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }} className="text-[48px] font-semibold leading-[1.06] tracking-[-0.03em]">
             {title}
           </motion.h1>
-          {sub && <p className="mt-2 text-[17px] text-muted">{sub}</p>}
+          {sub && <p className="mt-2 text-[19px] tracking-[-0.012em] text-muted">{sub}</p>}
         </div>
         <div className="flex gap-2">
         {secondary && <button onClick={secondary.onClick} className="btn-primary">{secondary.label}</button>}
@@ -51,7 +51,7 @@ export function PageTop({ title, action, onAction, actionHref, sub, chips, right
 
 export function Chip({ children, icon: I, onClick, active }: { children: React.ReactNode; icon?: any; onClick?: () => void; active?: boolean }) {
   return (
-    <button onClick={onClick} className={cn("flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors", active ? "bg-sig text-white" : "bg-white text-fg hover:bg-white/70")}>
+    <button onClick={onClick} className={cn("flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors", active ? "bg-sig text-white" : "bg-panel text-fg hover:bg-white/60")}>
       {I && <I className="h-4 w-4" strokeWidth={1.6} />}
       {children}
     </button>
@@ -64,11 +64,11 @@ export function Card({ title, right, children, className, dark, delay = 0 }: { t
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay, ease: EASE }}
-      className={cn("flex flex-col rounded-[24px] p-6", dark ? "bg-sig text-white" : "bg-white shadow-card", className)}
+      className={cn("flex flex-col rounded-[20px] p-6", dark ? "bg-ink text-white" : "bg-panel shadow-card", className)}
     >
       {(title || right) && (
         <div className="mb-4 flex items-center justify-between gap-3">
-          <div className="text-[19px] font-medium">{title}</div>
+          <div className="text-[19px] font-semibold tracking-[-0.018em]">{title}</div>
           {right}
         </div>
       )}
@@ -90,9 +90,9 @@ export function Details({ children = "View details", onClick, href, dark, open }
 export function Big({ value, unit, caption, red, dark }: { value: React.ReactNode; unit?: string; caption?: React.ReactNode; red?: boolean; dark?: boolean }) {
   return (
     <div className="flex items-end gap-3">
-      <div className={cn("text-[56px] font-medium leading-none tracking-[-0.03em] tabular-nums", red && "text-alarm")}>
+      <div className={cn("text-[56px] font-semibold leading-none tracking-[-0.035em] tabular-nums", red && "text-alarm")}>
         {value}
-        {unit && <span className={cn("ml-1", dark ? "text-white/40" : "text-[#b0b0b8]")}>{unit}</span>}
+        {unit && <span className={cn("ml-1", dark ? "text-white/40" : "text-faint")}>{unit}</span>}
       </div>
       {caption && <div className={cn("pb-1 text-[14px] leading-tight", dark ? "text-white/60" : "text-muted")}>{caption}</div>}
     </div>
@@ -142,7 +142,7 @@ export function Row({ label, value, children, strong }: { label: React.ReactNode
 
 export function Avatar({ id, size = 40, dark }: { id: string; size?: number; dark?: boolean }) {
   return (
-    <span className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-medium", dark ? "bg-white text-[#111]" : "bg-sig text-white")} style={{ width: size, height: size, fontSize: size * 0.36 }}>
+    <span className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-medium", dark ? "bg-white text-fg" : "bg-sig text-white")} style={{ width: size, height: size, fontSize: size * 0.36 }}>
       {pname(id).split(" ").map((x) => x[0]).join("").slice(0, 2)}
     </span>
   );
