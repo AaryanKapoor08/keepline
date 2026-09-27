@@ -46,10 +46,16 @@ export default function HistoryPage() {
   const [h, setH] = useState<any>(null);
   const [asOf, setAsOf] = useState("2026-09-04");
   const [prOpen, setPrOpen] = useState(false);
+  const [tab, setTab] = useState<"commits" | "decisions" | "owners">("commits");
+  const decisions = useData("/ledger/decisions", "ledger_decisions").data;
+  const owners = useData("/ledger/owners", "ledger_owners").data;
   const [merged, setMerged] = useState<Record<string, string>>({});
   const review = useData("/review/sarah", "review_sarah").data;
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("review")) setPrOpen(true);
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("review")) setPrOpen(true);
+    const t = q.get("tab");
+    if (t === "decisions" || t === "owners") setTab(t);
   }, []);
   useEffect(() => {
     getJSON(`/history/${area}`, `history_${area}`).then((r) => setH(r.data));
@@ -64,6 +70,41 @@ export default function HistoryPage() {
   return (
     <>
       <PageTop title="Every fact has a history." action="Open review queue" actionHref="/review" />
+      <div className="mb-4 flex gap-1 self-start rounded-full bg-white p-1" style={{ width: "fit-content" }}>
+        {(["commits", "decisions", "owners"] as const).map((t) => (
+          <button key={t} onClick={() => setTab(t)} className={cn("h-9 rounded-full px-4 text-[14px] capitalize", tab === t ? "bg-sig text-white" : "hover:bg-surface2")}>{t}</button>
+        ))}
+      </div>
+      {tab === "decisions" && (
+        <Card title="Decisions ledger" right={<span className="text-[13px] text-muted">{decisions?.length ?? 0} decisions and changes, each credited to who made it</span>}>
+          {(decisions ?? []).slice(0, 12).map((d: any) => (
+            <div key={d.sha} className="flex items-start gap-3 border-b border-[var(--line)] py-3 last:border-0">
+              <Avatar id={d.author ?? "sarah"} size={30} />
+              <div className="min-w-0 flex-1">
+                <div className="text-[15px] leading-snug">{d.message}</div>
+                {d.replaced && <div className="mt-0.5 text-[13px] text-muted">replaced &ldquo;{d.replaced}&rdquo;</div>}
+                <div className="mt-1 flex items-center gap-2 text-[12.5px] text-muted">
+                  <span>decided by {d.author_name}</span>·<span>{fmtDate(d.valid_from)}</span>·<SrcIcon t={d.source_type} /><span>{d.doc_id}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Card>
+      )}
+      {tab === "owners" && (
+        <Card title="Owners" right={<span className="text-[13px] text-muted">from hands-on evidence, like CODEOWNERS</span>}>
+          {(owners ?? []).map((o: any) => (
+            <div key={o.area_id} className="grid grid-cols-[240px_1fr_1.4fr] items-center gap-4 border-b border-[var(--line)] py-3 text-[14.5px] last:border-0">
+              <span className="font-medium">{o.area_name}</span>
+              <span>{o.owners.map((x: any) => x.name).join(", ")}{o.bus_factor <= 1 && <span className="ml-2 text-[12.5px] text-alarm">only owner</span>}</span>
+              <span className="text-muted">
+                {o.handoff?.continue ? <>{o.handoff.from_name?.split(" ")[0]} leaves {fmtDate(o.handoff.on)} · <span className="text-fg">{o.handoff.continue.map((n: string) => n.split(" ")[0]).join(" and ")} continue</span></> : o.handoff ? <>Pending handoff: <span className="text-fg">{o.handoff.from_name?.split(" ")[0]} → {o.handoff.to_name ?? "unassigned"}</span> on {fmtDate(o.handoff.on)}{o.handoff.reviewer_name ? `, reviewer ${o.handoff.reviewer_name.split(" ")[0]}` : ""}</> : "No change planned"}
+              </span>
+            </div>
+          ))}
+        </Card>
+      )}
+      {tab === "commits" && (<>
       <div className="mb-4 flex items-center justify-between">
         <div className="flex gap-2">
           {AREAS.map(([id, l]) => (
@@ -151,6 +192,7 @@ export default function HistoryPage() {
           </Card>
         </div>
       </div>
+      </>)}
     </>
   );
 }

@@ -23,6 +23,7 @@ Demo clock: Friday 2026-09-04. Sarah Chen's last day is Fri 2026-09-11.
 1. **Home** → click **Open Sarah's knowledge**.
 2. **Knowledge** opens with Sarah's sheet: scroll to **Don'ts** (CoreLink Friday rule near the top) and expand one receipt.
 3. **Review** (next page): Sarah's queue. Click **Approve** on the first card ("Merged into company memory · commit …"). Optional: **Correct** the next one.
+   *Optional, 10 s:* back on Sarah's sheet, scroll to **Credit**: "and Sarah gets credit — privately first." Her knowledge answered questions for colleagues; she chooses whether to share it.
 4. Press **⌘K** (or the "Ask Keepline" pill), asking as Alex: click "What should I know before touching reconciliation?", then type or click "What's the Bedford branch wifi password?" (an honest "I don't know"). Open **How I found this ›** once.
 5. Back on **Knowledge**: **Simulate a change** → the field says "Upgrade the CoreLink API to v3 next month" → **Run** → point at the black card: "Without pairing, CoreLink is uncovered in 100% of futures; pair Aisha this week and it drops to 40%." Click a red "rules" badge if there's time.
 6. **Proof**: point at the three rows (test split, N shown).

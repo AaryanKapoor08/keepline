@@ -374,6 +374,8 @@ def list_results() -> dict[str, bool]:
 
 
 # ----------------------------------------------------------------------------------------------- app
+# Handlers are async on purpose: they run one at a time on the event loop, because the SQLite store holds a
+# single connection that must not be used from several threads at once.
 app = FastAPI(title="Keepline API", version="1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
                    allow_methods=["*"], allow_headers=["*"])
@@ -395,52 +397,52 @@ class WhatIfIn(BaseModel):
 
 
 @app.get("/health")
-def health() -> dict[str, Any]:
+async def health() -> dict[str, Any]:
     return {"ok": True, "today": TODAY.isoformat(), "results": list_results()}
 
 
 @app.get("/meta")
-def meta() -> dict[str, Any]:
+async def meta() -> dict[str, Any]:
     return get_meta()
 
 
 @app.get("/graph/org")
-def org_graph() -> dict[str, Any]:
+async def org_graph() -> dict[str, Any]:
     return get_org_graph()
 
 
 @app.get("/graph/person/{pid}")
-def person_graph(pid: str) -> dict[str, Any]:
+async def person_graph(pid: str) -> dict[str, Any]:
     return get_person_graph(pid)
 
 
 @app.get("/profile/{pid}")
-def profile(pid: str) -> dict[str, Any]:
+async def profile(pid: str) -> dict[str, Any]:
     return get_profile(pid)
 
 
 @app.get("/risk")
-def risk(exclude: str = "") -> list[dict[str, Any]]:
+async def risk(exclude: str = "") -> list[dict[str, Any]]:
     return get_risk([x for x in exclude.split(",") if x])
 
 
 @app.get("/whatif/{pid}")
-def whatif(pid: str) -> dict[str, Any]:
+async def whatif(pid: str) -> dict[str, Any]:
     return get_whatif(pid)
 
 
 @app.post("/whatif")
-def whatif_multi(body: WhatIfIn) -> dict[str, Any]:
+async def whatif_multi(body: WhatIfIn) -> dict[str, Any]:
     return get_whatif_multi(body.people, date.fromisoformat(body.date) if body.date else None)
 
 
 @app.get("/handoff/{pid}")
-def handoff(pid: str) -> dict[str, Any]:
+async def handoff(pid: str) -> dict[str, Any]:
     return get_handoff(pid)
 
 
 @app.post("/handoff/{pid}/signoff")
-def signoff(pid: str) -> dict[str, Any]:
+async def signoff(pid: str) -> dict[str, Any]:
     try:
         from keepline.products.signoff import sign_off
 
@@ -451,32 +453,32 @@ def signoff(pid: str) -> dict[str, Any]:
 
 
 @app.get("/onboarding/{pid}")
-def onboarding(pid: str) -> dict[str, Any]:
+async def onboarding(pid: str) -> dict[str, Any]:
     return get_onboarding(pid)
 
 
 @app.post("/ask")
-def ask(body: AskIn) -> dict[str, Any]:
+async def ask(body: AskIn) -> dict[str, Any]:
     return do_ask(body.question, body.asker_id, body.as_of)
 
 
 @app.post("/decision")
-def decision(body: TextIn) -> dict[str, Any]:
+async def decision(body: TextIn) -> dict[str, Any]:
     return do_decision(body.text)
 
 
 @app.post("/staffing")
-def staffing(body: TextIn) -> dict[str, Any]:
+async def staffing(body: TextIn) -> dict[str, Any]:
     return do_staffing(body.text)
 
 
 @app.get("/results")
-def results_index() -> dict[str, bool]:
+async def results_index() -> dict[str, bool]:
     return list_results()
 
 
 @app.get("/results/{name}")
-def results(name: str) -> Any:
+async def results(name: str) -> Any:
     if not re.fullmatch(r"[a-z_]+", name):
         raise HTTPException(400, "bad name")
     d = get_result(name)
@@ -637,34 +639,34 @@ class SimIn(BaseModel):
 
 
 @app.get("/history/latest")
-def history_latest() -> list[dict[str, Any]]:
+async def history_latest() -> list[dict[str, Any]]:
     return get_latest_commits()
 
 
 @app.get("/history/{area_id}")
-def history(area_id: str) -> dict[str, Any]:
+async def history(area_id: str) -> dict[str, Any]:
     return get_history(area_id)
 
 
 @app.get("/person/{pid}")
-def person_sheet(pid: str) -> dict[str, Any]:
+async def person_sheet(pid: str) -> dict[str, Any]:
     return get_person_sheet(pid)
 
 
 @app.get("/review/{pid}")
-def review(pid: str) -> dict[str, Any]:
+async def review(pid: str) -> dict[str, Any]:
     return get_review(pid)
 
 
 @app.get("/project_sim/templates")
-def sim_templates() -> list[dict[str, Any]]:
+async def sim_templates() -> list[dict[str, Any]]:
     from keepline.products.project_sim import TEMPLATES
 
     return TEMPLATES
 
 
 @app.post("/project_sim")
-def project_sim(body: SimIn) -> dict[str, Any]:
+async def project_sim(body: SimIn) -> dict[str, Any]:
     return do_project_sim(body.template_id, body.brief, body.weeks, body.leaves)
 
 
@@ -711,12 +713,12 @@ class ReviewIn(BaseModel):
 
 
 @app.get("/review_queue/{pid}")
-def review_queue(pid: str) -> dict[str, Any]:
+async def review_queue(pid: str) -> dict[str, Any]:
     return get_review_queue(pid)
 
 
 @app.post("/review_item/{fact_id}")
-def review_item(fact_id: str, body: ReviewIn) -> dict[str, Any]:
+async def review_item(fact_id: str, body: ReviewIn) -> dict[str, Any]:
     """Persisted review decision. The demo UI keeps decisions client-side so rehearsals never mutate the DB."""
     store().set_review_status(fact_id, ReviewStatus(body.status), body.corrected_text)
     return {"ok": True, "fact_id": fact_id, "status": body.status, "sha": _sha(fact_id + (body.corrected_text or ""))}
@@ -761,8 +763,120 @@ class ChatIn(BaseModel):
 
 
 @app.post("/chat")
-def chat(body: ChatIn) -> dict[str, Any]:
+async def chat(body: ChatIn) -> dict[str, Any]:
     try:
         return do_chat(body.messages, body.asker_id, body.as_of)
     except Exception as e:  # noqa: BLE001
         raise HTTPException(503, f"chat unavailable: {e}")
+
+
+# ----------------------------------------------------------------------------------------------- credit & ledger
+def get_credit(pid: str) -> dict[str, Any]:
+    """Private-first credit for one person: what their captured knowledge did for colleagues. No comparisons."""
+    s = store()
+    from keepline.products._common import is_incident
+
+    rows = s.query_log(about_person_id=pid, limit=1000)
+    answered = []
+    for q in rows:
+        if q.get("action") != "answer" or q.get("asker_id") == pid:
+            continue
+        mine = [f for f in (s.fact(fid) for fid in q.get("fact_ids", [])) if f and f.stated_by == pid]
+        if mine:
+            answered.append((q, mine[0]))
+    colleagues = sorted({q["asker_id"] for q, _ in answered})
+    examples = []
+    picked, seen = [], set()
+    for q, f in answered:
+        if q["asker_id"] not in seen:
+            picked.append((q, f))
+            seen.add(q["asker_id"])
+    for q, f in picked[:3]:
+        d = s.doc(f.source_doc_ids[0]) if f.source_doc_ids else None
+        examples.append({"asker_id": q["asker_id"], "asker_name": (_p(q["asker_id"]) or {}).get("name"), "question": q["question"],
+                         "asked_at": q["asked_at"], "fact": f.text, "date": f.valid_from.isoformat(),
+                         "doc_id": d.id if d else None, "source_type": str(d.source_type) if d else None})
+    onboarding = 0
+    try:
+        from keepline.products.onboarding import build_onboarding_brief
+
+        brief = to_dict(build_onboarding_brief(s, "alex", TODAY))
+        onboarding = len({c["doc_id"] for sec in brief["sections"] for it in sec["items"] for c in it.get("citations", [])
+                          if c.get("author_id") == pid})
+    except Exception:
+        pass
+    prevented = None
+    for f in s.facts(person_id=pid, kinds=[FactKind.LANDMINE], current_only=True):
+        for d in s.docs(f.source_doc_ids[:3]):
+            if str(d.source_type) == "ticket" and is_incident(d.text or ""):
+                prevented = {"rule": f.text, "incident": (d.title or d.container), "doc_id": d.id, "date": d.timestamp.date().isoformat()}
+                break
+        if prevented:
+            break
+    return {"person_id": pid, "n_questions": len(answered), "n_colleagues": len(colleagues), "colleagues": colleagues,
+            "onboarding_facts": onboarding, "prevented": prevented, "examples": examples,
+            "note": "Demo usage: simulated questions."}
+
+
+def get_decisions() -> list[dict[str, Any]]:
+    s = store()
+    out = []
+    for f in _said(s.facts()):
+        if f.kind != FactKind.DECISION and not f.supersedes:
+            continue
+        old = s.fact(f.supersedes) if f.supersedes else None
+        c = _commit(f)
+        c["replaced"] = old.text if old else None
+        c["replaced_date"] = old.valid_from.isoformat() if old else None
+        out.append(c)
+    out.sort(key=lambda c: c["valid_from"], reverse=True)
+    return out
+
+
+def get_owners() -> list[dict[str, Any]]:
+    s = store()
+    from keepline.products.handoff import successor
+    from keepline.products.risk import risk_map
+    from keepline.products._common import people_by_id
+
+    people = people_by_id(s)
+    out = []
+    from keepline.products._common import is_strong
+
+    for r in risk_map(s, TODAY, with_trend=False):
+        strong = [e.person_id for e in sorted(s.expertise(area_id=r.area_id), key=lambda e: -e.score) if is_strong(e)]
+        owners = list(dict.fromkeys(strong)) or list(dict.fromkeys(e[0] for e in r.experts[:1]))
+        handoff = None
+        leaving = [o for o in owners if people.get(o) and people[o].departure_date]
+        staying = [o for o in owners if o not in leaving]
+        if leaving and staying:
+            handoff = {"from": leaving[0], "from_name": people[leaving[0]].name, "on": people[leaving[0]].departure_date.isoformat(),
+                       "to": None, "to_name": None, "reviewer": None, "reviewer_name": None,
+                       "continue": [people[o].name for o in staying if o in people]}
+        elif leaving:
+            exps = sorted(s.expertise(area_id=r.area_id), key=lambda e: -e.score)
+            learner, reviewer = successor(exps, people, leaving[0], TODAY)
+            if not reviewer:  # nobody else holds it: the staying person with the most evidence reviews the handoff
+                reviewer = next((e.person_id for e in exps if e.person_id not in (leaving[0], learner)
+                                 and not (people.get(e.person_id) and people[e.person_id].departure_date)), None)
+            handoff = {"from": leaving[0], "from_name": people[leaving[0]].name, "on": people[leaving[0]].departure_date.isoformat(),
+                       "to": learner, "to_name": people[learner].name if learner in people else None,
+                       "reviewer": reviewer, "reviewer_name": people[reviewer].name if reviewer in people else None}
+        out.append({"area_id": r.area_id, "area_name": r.area_name, "owners": [{"person_id": o, "name": people[o].name if o in people else o} for o in owners],
+                    "bus_factor": r.bus_factor, "handoff": handoff})
+    return out
+
+
+@app.get("/credit/{pid}")
+async def credit(pid: str) -> dict[str, Any]:
+    return get_credit(pid)
+
+
+@app.get("/ledger/decisions")
+async def ledger_decisions() -> list[dict[str, Any]]:
+    return get_decisions()
+
+
+@app.get("/ledger/owners")
+async def ledger_owners() -> list[dict[str, Any]]:
+    return get_owners()

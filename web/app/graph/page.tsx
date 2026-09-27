@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { X } from "lucide-react";
+import { X, Lock } from "lucide-react";
 import { useData, getJSON, postJSON, snapshot, normQ, nearest, pname, first, fmtDate } from "@/lib/data";
 import { PageTop, Card, Quote, Avatar, EASE } from "@/components/kit";
 import { cn } from "@/components/ui";
@@ -93,6 +93,41 @@ function AskBox({ pid }: { pid: string }) {
   );
 }
 
+
+function CreditSection({ pid }: { pid: string }) {
+  const [c, setC] = useState<any>(null);
+  const [shared, setShared] = useState(false);
+  useEffect(() => {
+    getJSON(`/credit/${pid}`, `credit_${pid}`).then((r) => setC(r.data));
+  }, [pid]);
+  if (!c || (!c.n_questions && !c.onboarding_facts)) return null;
+  const fn = first(pid);
+  return (
+    <div className="rounded-[20px] bg-white p-5">
+      <div className="flex items-baseline justify-between">
+        <div className="text-[16px] font-medium">Credit</div>
+        <div className="flex items-center gap-1.5 text-[12.5px] text-muted"><Lock className="h-3 w-3" strokeWidth={1.8} /> Private to {fn} · {pid === "sarah" ? "she" : "they"} choose{pid === "sarah" ? "s" : ""} to share</div>
+      </div>
+      <div className="mt-3 space-y-1.5 text-[15px] leading-snug">
+        {c.n_questions > 0 && <div>{pname(pid).split(" ")[0]}&apos;s knowledge answered <b className="font-medium">{c.n_questions} questions</b> for <b className="font-medium">{c.n_colleagues} colleagues</b> in the last two weeks.</div>}
+        {c.onboarding_facts > 0 && <div><b className="font-medium">{c.onboarding_facts} messages {fn} wrote</b> are in Alex&apos;s onboarding.</div>}
+        {c.prevented && <div>{fn}&apos;s rule &ldquo;{c.prevented.rule}&rdquo; came out of {c.prevented.incident}.</div>}
+      </div>
+      <div className="mt-3">
+        {c.examples.map((e: any, i: number) => (
+          <Item key={i} title={`${e.asker_name?.split(" ")[0]} asked “${e.question}”`} sub={`answered from ${pid === "sarah" ? "her" : "their"} ${e.source_type === "slack" ? "message" : e.source_type ?? "note"} of ${fmtDate(e.date)}`} c={{ quote: e.fact, stated_by: pid, date: e.date, doc_id: e.doc_id }} />
+        ))}
+      </div>
+      <div className="mt-3 flex items-center justify-between">
+        <button onClick={() => setShared(!shared)} className={cn("h-9 rounded-full px-4 text-[13px]", shared ? "bg-sigtint text-[var(--sig)]" : "bg-surface2 hover:bg-surface3")}>
+          {shared ? "Shared with Dave MacLeod" : "Share with manager"}
+        </button>
+        <span className="text-[12px] text-muted">{c.note}</span>
+      </div>
+    </div>
+  );
+}
+
 function PersonSheet({ pid, onClose }: { pid: string; onClose: () => void }) {
   const [d, setD] = useState<any>(null);
   useEffect(() => {
@@ -153,6 +188,7 @@ function PersonSheet({ pid, onClose }: { pid: string; onClose: () => void }) {
                 );
               })}
             </Section>
+            <CreditSection pid={pid} />
             {p.departure_date && <AskBox pid={pid} />}
             <button onClick={() => window.dispatchEvent(new CustomEvent("keepline-ask", { detail: { prefill: `What should I know about ${p.name}'s areas?` } }))} className="w-full rounded-[20px] bg-white p-4 text-left text-[14px] text-[var(--sig)]">
               Ask Keepline about {p.name.split(" ")[0]}&apos;s areas ›

@@ -57,6 +57,10 @@ def main() -> None:
         dump(f"person_{p.id}", lambda p=p: S.get_person_sheet(p.id))
     dump("review_sarah", lambda: S.get_review("sarah"))
     dump("review_queue_sarah", lambda: S.get_review_queue("sarah"))
+    for p in S.store().people():
+        dump(f"credit_{p.id}", lambda p=p: S.get_credit(p.id))
+    dump("ledger_decisions", S.get_decisions)
+    dump("ledger_owners", S.get_owners)
     dump("chat_canned", lambda: {S._norm_q(q): S.do_chat([{"role": "user", "content": q}], "alex") for q in S.CHAT_DEMO})
     from keepline.products.project_sim import TEMPLATES
 

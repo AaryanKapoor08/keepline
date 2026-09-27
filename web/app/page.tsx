@@ -97,6 +97,7 @@ export default function Home() {
         </Card>
         <Card title="People & teams">
           <Big value={people.length || "—"} caption={`people · ${Object.keys(teams).length} teams`} />
+          <Link href="/history?tab=decisions" className="mt-3 block text-[14px] text-[var(--sig)]">Every fact credits its author ›</Link>
           <div className="mt-4 flex flex-wrap gap-2">
             {Object.entries(teams).map(([t, n]) => (
               <span key={t} className="rounded-full bg-surface2 px-3 py-1.5 text-[13px]">{TEAM_LABEL[t] ?? t} <span className="text-muted">{n}</span></span>
