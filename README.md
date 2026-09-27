@@ -32,7 +32,7 @@ Held-out test split, N = 216 questions (`data/results/benchmark_test.json`):
 | Metric | Plain search | **Keepline** |
 |---|---|---|
 | Correct with a valid citation (N=137 answerable) | 35.8% | **43.1%** |
-| Confidently wrong, of answered | 71.8% | **43.6%** |
+| Confidently wrong, of all 216 questions | 71.8% | **22.2%** |
 | Right action: answer / abstain / route | 28.2% | **50.9%** |
 | Routed to the right person (N=21) | 57% | **100%** |
 | Current version of a changed fact (N=39) | 25.6% | **46.2%** |
