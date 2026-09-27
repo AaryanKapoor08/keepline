@@ -6,3 +6,4 @@ data/memory/
 .env
 *.egg-info/
 .venv/
+data/results/arm_cache.json

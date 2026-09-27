@@ -114,8 +114,8 @@ def reliability_chart(bench: Mapping[str, Any], out_dir: Path) -> Path:
 
 
 def reward_curve_chart(curve: Mapping[str, Any], out_dir: Path) -> Path:
-    fig, ax = plt.subplots(figsize=(8, 4.2))
-    labels = {"bandit": "Bandit (LinUCB)", "default": "Default policy", "best_fixed": "Best fixed arm (hindsight)",
+    fig, ax = plt.subplots(figsize=(8, 4.8))
+    labels = {"bandit": "Bandit (LinUCB)", "default": "Default policy", "best_fixed": "Best fixed arm (hindsight on train)",
               "random": "Random arm", "oracle": "Oracle (per-question best)"}  # fmt: skip
     for k in ("oracle", "best_fixed", "default", "random", "bandit"):
         ys = curve["rolling"].get(k)
@@ -124,5 +124,5 @@ def reward_curve_chart(curve: Mapping[str, Any], out_dir: Path) -> Path:
                     linestyle=":" if k == "oracle" else "-", label=f"{labels[k]}  mean={curve['final'][k]:+.2f}")  # fmt: skip
     ax.set_xlabel(f"Training step ({curve['epochs']} passes over N={curve['n_train']} train questions)", color=INK2)
     _style(ax, f"Reward per decision, rolling mean (window {curve['window']})", "Reward")
-    ax.legend(frameon=False, fontsize=8, loc="lower right")
+    ax.legend(frameon=False, fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=2)
     return _save(fig, out_dir / "reward_curve.png")

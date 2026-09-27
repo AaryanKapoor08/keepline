@@ -41,7 +41,10 @@ def load_agent(llm: str = "none") -> Any:
     """The product agent. ``llm="none"`` forces the deterministic path (default for training/benchmarks)."""
     from keepline.agent.answer import load_default_agent
 
-    agent = load_default_agent()
-    if llm == "none" and hasattr(agent, "llm"):
-        agent.llm = None
-    return agent
+    try:
+        return load_default_agent(use_llm=(llm != "none"))
+    except TypeError:  # older agent without the use_llm switch
+        agent = load_default_agent()
+        if llm == "none" and hasattr(agent, "llm"):
+            agent.llm = None
+        return agent

@@ -48,6 +48,7 @@ def ans(action: Action, text: str = "", said=(), route_to=(), conf: float = 0.8)
         (CURRENT_Q, ans(Action.ANSWER, "Skips the 1st and 15th."), Outcome.CORRECT_UNCITED),
         (CURRENT_Q, ans(Action.ANSWER, "Skips the 1st and 15th.", [cite("slack-1")]), Outcome.CORRECT_UNCITED),
         (CURRENT_Q, ans(Action.ANSWER, "It skips only the 1st.", [cite("slack-1")]), Outcome.STALE_ANSWER),
+        (CURRENT_Q, ans(Action.ANSWER, "It runs daily.", [cite("slack-1", "only the 1st")]), Outcome.HALLUCINATION),
         (CURRENT_Q, ans(Action.ANSWER, "It runs every day."), Outcome.HALLUCINATION),
         (CURRENT_Q, ans(Action.ABSTAIN, "I don't know."), Outcome.UNNECESSARY_ABSTAIN),
         (CURRENT_Q, ans(Action.ROUTE, "Ask Sarah.", route_to=["sarah"]), Outcome.UNNECESSARY_ABSTAIN),
@@ -71,7 +72,7 @@ def test_outcome_table(question: Question, answer: Answer, outcome: Outcome) -> 
 
 
 def test_history_citation_does_not_make_answer_stale() -> None:
-    a = ans(Action.ANSWER, "Now the 1st and 15th.", [cite("slack-2"), cite("slack-1", "only the 1st", current=False)])
+    a = ans(Action.ANSWER, "Now the 1st and 15th.", [cite("slack-2", "was only the 1st, now 1st and 15th")])
     assert grade(CURRENT_Q, a, TRUTH, EV).outcome == Outcome.CORRECT_CITED
 
 
@@ -84,7 +85,9 @@ def test_normalization() -> None:
     assert normalize("Fifteenth, TWO keys; $1,000!") == "15th 2 key 1000"
     assert cnf_match([["1st", "first"], ["15th"]], normalize("the First and 15th"))
     assert not cnf_match([["1st"], ["15th"]], normalize("the 1st only"))
-    assert not cnf_match([["key"]], normalize("keyboard"))  # token boundaries, not substrings
+    assert not cnf_match([["1st"]], normalize("the 21st"))  # anchored at token start
+    assert not cnf_match([["60"]], normalize("600 days"))  # digits are right-anchored
+    assert cnf_match([["approv"], ["quarter"]], normalize("Approved quarterly"))  # data uses stems
     assert not cnf_match([], normalize("anything"))
 
 

@@ -24,6 +24,7 @@ Output ``data/results/benchmark_<split>.json`` (schema v1, read by the Streamlit
       },
       "bias_check": {...see bias_check()...},
       "judge_agreement": {...} | null,               # only with --judge
+      "examples": {system: {outcome: [row, ...up to 3]}},   # same row schema as "rows"; for UI storytelling
       "rows": [{"system","qid","qtype","area_id","expected_action","question","asker_id","as_of","action",
                 "answer","citations":[{"doc_id","quote","is_current"}],"route_to","confidence","outcome",
                 "correct","citation_valid","reward","notes","arm"}]
@@ -269,6 +270,7 @@ def run_benchmark(split: str, systems: Sequence[str], llm: str = "none", judge: 
         "systems": per_system,
         "bias_check": bias_check(world, store, rows, gold_routes, author_volume()),
         "judge_agreement": None,
+        "examples": examples(rows),
         "rows": rows,
     }
     if judge:
@@ -291,6 +293,16 @@ def render_charts(bench: Mapping[str, Any]) -> list[Path]:
     curve_path = RESULTS_DIR / "reward_curve.json"
     if curve_path.exists():
         out.append(charts.reward_curve_chart(json.loads(curve_path.read_text(encoding="utf-8")), RESULTS_DIR))
+    return out
+
+
+def examples(rows: Sequence[Mapping[str, Any]], per_outcome: int = 3) -> dict[str, dict[str, list]]:
+    """A few rows per (system, outcome), picked in question-id order so they are stable across runs."""
+    out: dict[str, dict[str, list]] = {}
+    for r in sorted(rows, key=lambda r: r["qid"]):
+        bucket = out.setdefault(r["system"], {}).setdefault(r["outcome"], [])
+        if len(bucket) < per_outcome:
+            bucket.append(r)
     return out
 
 

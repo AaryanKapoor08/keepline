@@ -13,12 +13,23 @@ Outputs (schemas documented here because Agent D's app reads them):
 
 ``data/results/bandit.json``::
 
-    {"version": 1, "seed", "epochs", "alpha", "ridge", "hyperparam_dev_reward": {"alpha=..,ridge=..": dev mean},
+    {"version": 1, "seed", "epochs", "alpha", "ridge", "features": "full"|"area_only",
+     "hyperparam_dev_reward": {"features=..,alpha=..,ridge=..": dev mean reward},
      "fingerprint",
      "n_train", "n_dev", "arms": [Arm.to_dict()], "featurizer": {...}, "model": {...LinUCB A/b...},
      "per_area": {area_id: {"arm": key, "share": float, "n": int, "arm_counts": {key: n}}},
      "dev": {"bandit", "default", "best_fixed", "best_fixed_arm", "oracle", "random": mean reward, "n"},
-     "train": {same keys}, "pull_counts": {arm_key: n}}
+         # best_fixed_arm is chosen on TRAIN; oracle = per-question best arm in hindsight (upper bound)
+     "train": {same keys}, "pull_counts": {arm_key: n},
+     "arm_stats": {arm_key: {"pulls": n, "mean_reward": float|None, "train_mean_reward": float (all questions,
+                   counterfactual), "dev_mean_reward": float}},
+     "arm_timeline": {"every": int, "steps": [int], "pulls": {arm_key: [cumulative pulls]},
+                      "mean_reward": {arm_key: [running mean of observed reward | None]}}}
+
+``data/results/training_log.jsonl`` -- one row per bandit step (for replaying training as an animation)::
+
+    {"step", "epoch", "qid", "question", "area_id" (gold), "pred_area" (agent's), "qtype", "expected_action",
+     "arm", "action", "outcome", "reward", "confidence", "rolling_reward", "default_reward", "oracle_reward"}
 
 ``data/results/reward_curve.json``::
 
@@ -113,11 +124,11 @@ def curve_series(run: Run, R: np.ndarray, default: np.ndarray, seed: int) -> dic
 
 
 def summary(model: ContextualBandit, X: np.ndarray, R: np.ndarray, default: np.ndarray, arms: list[Arm],
-            seed: int) -> dict[str, Any]:  # fmt: skip
+            seed: int, best: int) -> dict[str, Any]:  # fmt: skip
+    """Mean reward of each policy on (X, R). ``best`` = best fixed arm chosen on TRAIN (no peeking at dev)."""
     if len(X) == 0:
         return {"n": 0}
     _, g = greedy_rewards(model, X, R)
-    best = int(np.argmax(R.mean(axis=0)))
     rng = np.random.default_rng(seed)
     rand = R[np.arange(len(X)), rng.integers(0, R.shape[1], len(X))]
     return {
@@ -154,37 +165,48 @@ def train(
     alpha_grid: Sequence[float] = ALPHA_GRID,
     ridge_grid: Sequence[float] = RIDGE_GRID,
     area_ids: Sequence[str] = (),
-) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Returns (bandit_json, reward_curve_json). Pure given the env's cached answers."""
+) -> tuple[dict[str, Any], dict[str, Any], Run]:
+    """Returns (bandit_json, reward_curve_json, winning run). Pure given the env's cached answers."""
     arms = arms or default_arm_grid()
     ctx_tr = [env.context(q) for q in train_qs]
     ctx_dev = [env.context(q) for q in dev_qs]
     areas = list(area_ids) or [str(c.get("area_id")) for c in ctx_tr if c.get("area_id")]
-    feat = Featurizer.fit(ctx_tr, areas)
-    X_tr = np.array([feat.transform(c) for c in ctx_tr])
-    X_dev = np.array([feat.transform(c) for c in ctx_dev]).reshape(len(ctx_dev), feat.dim)
+    full = Featurizer.fit(ctx_tr, areas)
+    feats = {"full": full, "area_only": Featurizer(full.areas, [], [])}
+    X = {m: (np.array([f.transform(c) for c in ctx_tr]).reshape(len(ctx_tr), f.dim),
+             np.array([f.transform(c) for c in ctx_dev]).reshape(len(ctx_dev), f.dim)) for m, f in feats.items()}  # fmt: skip
     log.info("answering %d train + %d dev questions x %d arms (cached)", len(train_qs), len(dev_qs), len(arms))
     R_tr, R_dev = env.reward_matrix(train_qs, arms), env.reward_matrix(dev_qs, arms)
     d_tr, d_dev = env.default_rewards(train_qs), env.default_rewards(dev_qs)
 
-    grid = [(a, lam) for a in alpha_grid for lam in ridge_grid]
-    runs = {hp: simulate(X_tr, R_tr, alpha=hp[0], ridge=hp[1], epochs=epochs, seed=seed) for hp in grid}
-    dev_scores = {hp: float(greedy_rewards(r.model, X_dev, R_dev)[1].mean()) if len(dev_qs) else 0.0
+    # Hyperparameters tuned on DEV: exploration alpha, ridge strength, and the context feature set. "area_only"
+    # (bias + area one-hot) is a per-area bandit; "full" adds the agent's numeric features. With a few hundred
+    # train questions the richer context can overfit, so dev decides.
+    grid = [(m, a, lam) for m in feats for a in alpha_grid for lam in ridge_grid]
+    runs = {hp: simulate(X[hp[0]][0], R_tr, alpha=hp[1], ridge=hp[2], epochs=epochs, seed=seed) for hp in grid}
+    dev_scores = {hp: float(greedy_rewards(r.model, X[hp[0]][1], R_dev)[1].mean()) if len(dev_qs) else 0.0
                   for hp, r in runs.items()}  # fmt: skip
-    # ties -> less exploration, stronger regularisation (the simpler model)
-    alpha, ridge = max(grid, key=lambda hp: (round(dev_scores[hp], 6), -hp[0], hp[1]))
-    run = runs[(alpha, ridge)]
+    # ties -> simpler model: area-only context, less exploration, stronger regularisation
+    mode, alpha, ridge = max(grid, key=lambda hp: (round(dev_scores[hp], 6), hp[0] == "area_only", -hp[1], hp[2]))
+    run, feat = runs[(mode, alpha, ridge)], feats[mode]
+    X_tr, X_dev = X[mode]
 
     series = curve_series(run, R_tr, d_tr, seed)
+    best_train = int(np.argmax(R_tr.mean(axis=0)))
+    stats, timeline = arm_stats(run, arms, R_tr, R_dev)
+    # window = one epoch: every train question appears exactly once per window, so the series are comparable
+    # (with a short window the curve mostly shows which questions happened to come up, not learning)
+    window = max(ROLLING_WINDOW, len(train_qs))
     curve = {
         "steps": len(run.rewards),
-        "window": ROLLING_WINDOW,
+        "window": window,
         "n_train": len(train_qs),
         "epochs": epochs,
         "alpha": alpha,
-        "rolling": {k: rolling_mean(v, ROLLING_WINDOW) for k, v in series.items()},
+        "rolling": {k: rolling_mean(v, window) for k, v in series.items()},
         "cumulative": {k: cumulative_mean(v) for k, v in series.items()},
         "final": {k: round(float(np.mean(v)), 4) if v else 0.0 for k, v in series.items()},
+        "_raw": series,  # per-step rewards; stripped before writing, used for the training log
     }
     bandit = {
         "version": 1,
@@ -192,7 +214,9 @@ def train(
         "epochs": epochs,
         "alpha": alpha,
         "ridge": ridge,
-        "hyperparam_dev_reward": {f"alpha={a},ridge={lam}": round(v, 4) for (a, lam), v in dev_scores.items()},
+        "features": mode,
+        "hyperparam_dev_reward": {f"features={m},alpha={a},ridge={lam}": round(v, 4)
+                                  for (m, a, lam), v in dev_scores.items()},  # fmt: skip
         "fingerprint": env.cache.fingerprint,
         "n_train": len(train_qs),
         "n_dev": len(dev_qs),
@@ -201,11 +225,56 @@ def train(
         "model": run.model.to_dict(),
         "per_area": per_area_choice(run.model, np.vstack([X_tr, X_dev]),
                                     [c.get("area_id") for c in ctx_tr + ctx_dev], arms),  # fmt: skip
-        "train": summary(run.model, X_tr, R_tr, d_tr, arms, seed),
-        "dev": summary(run.model, X_dev, R_dev, d_dev, arms, seed),
+        "train": summary(run.model, X_tr, R_tr, d_tr, arms, seed, best_train),
+        "dev": summary(run.model, X_dev, R_dev, d_dev, arms, seed, best_train),
         "pull_counts": {arms[i].key: int(c) for i, c in enumerate(run.model.counts)},
+        "arm_stats": stats,
+        "arm_timeline": timeline,
     }
-    return bandit, curve
+    return bandit, curve, run
+
+
+def training_log(env: AnswerEnv, qs: list[Question], run: Run, arms: list[Arm], curve: dict) -> list[dict]:
+    """One row per step of the winning run; every answer is already cached, so this is cheap."""
+    rows = []
+    n = max(1, len(qs))
+    for t, (i, a) in enumerate(zip(run.order, run.pulls)):
+        q, step = qs[i], env.step(qs[i], arms[a])
+        rows.append({
+            "step": t + 1, "epoch": t // n + 1, "qid": q.id, "question": q.text, "area_id": q.area_id,
+            "pred_area": env.context(q).get("area_id"), "qtype": str(q.qtype),
+            "expected_action": str(q.expected_action), "arm": arms[a].key, "action": str(step.answer.action),
+            "outcome": str(step.grade.outcome), "reward": round(step.reward, 4),
+            "confidence": round(float(step.answer.confidence), 4),
+            "rolling_reward": curve["rolling"]["bandit"][t], "default_reward": round(curve["_raw"]["default"][t], 4),
+            "oracle_reward": round(curve["_raw"]["oracle"][t], 4),
+        })  # fmt: skip
+    return rows
+
+
+def arm_stats(run: Run, arms: list[Arm], R_tr: np.ndarray, R_dev: np.ndarray, every: int = 20) -> tuple[dict, dict]:
+    """Per-arm pulls and observed mean reward (final + sampled over time) for the UI."""
+    k = len(arms)
+    pulls, total = np.zeros(k, dtype=int), np.zeros(k)
+    steps, p_hist, m_hist = [], {a.key: [] for a in arms}, {a.key: [] for a in arms}
+    for t, (a, r) in enumerate(zip(run.pulls, run.rewards), 1):
+        pulls[a] += 1
+        total[a] += r
+        if t % every == 0 or t == len(run.pulls):
+            steps.append(t)
+            for j, arm in enumerate(arms):
+                p_hist[arm.key].append(int(pulls[j]))
+                m_hist[arm.key].append(round(total[j] / pulls[j], 4) if pulls[j] else None)
+    stats = {
+        arm.key: {
+            "pulls": int(pulls[j]),
+            "mean_reward": round(total[j] / pulls[j], 4) if pulls[j] else None,
+            "train_mean_reward": round(float(R_tr[:, j].mean()), 4) if len(R_tr) else None,
+            "dev_mean_reward": round(float(R_dev[:, j].mean()), 4) if len(R_dev) else None,
+        }
+        for j, arm in enumerate(arms)
+    }
+    return stats, {"every": every, "steps": steps, "pulls": p_hist, "mean_reward": m_hist}
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -225,13 +294,17 @@ def main(argv: Sequence[str] | None = None) -> None:
         area_ids = [a.id for a in agent.store.areas()]
     except Exception:  # noqa: BLE001 -- fall back to areas seen in contexts
         area_ids = []
-    bandit, curve = train(env, world.questions("train"), world.questions("dev"), epochs=args.epochs,
+    bandit, curve, run = train(env, world.questions("train"), world.questions("dev"), epochs=args.epochs,
                           seed=args.seed, area_ids=area_ids)  # fmt: skip
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     (RESULTS_DIR / "bandit.json").write_text(json.dumps(bandit, indent=1), encoding="utf-8")
+    log_rows = training_log(env, world.questions("train"), run, [Arm.from_dict(a) for a in bandit["arms"]], curve)
+    curve.pop("_raw", None)
     (RESULTS_DIR / "reward_curve.json").write_text(json.dumps(curve), encoding="utf-8")
+    with (RESULTS_DIR / "training_log.jsonl").open("w", encoding="utf-8") as fh:
+        fh.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in log_rows)
     d = bandit["dev"]
-    print(f"alpha={bandit['alpha']} ridge={bandit['ridge']}  train N={bandit['n_train']}  dev N={bandit['n_dev']}  steps={curve['steps']}")
+    print(f"features={bandit['features']} alpha={bandit['alpha']} ridge={bandit['ridge']}  train N={bandit['n_train']}  dev N={bandit['n_dev']}  steps={curve['steps']}")
     print("DEV mean reward: " + "  ".join(f"{k}={d.get(k)}" for k in SERIES) + f"  (best arm {d.get('best_fixed_arm')})")
     for area, row in bandit["per_area"].items():
         print(f"  {area:<24} -> {row['arm']:<28} share={row['share']:.2f} n={row['n']}")

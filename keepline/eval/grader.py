@@ -7,13 +7,13 @@ measure agreement with the keyword grader.
 
 Matching rules
 --------------
-* Text searched = ``answer.text`` + quotes of the answer's citations (a quote the answer shows is part of
-  what the asker reads). Superseded citations (``is_current=False``, rendered as "replaced by ...") count for
-  gold matching but NOT for the stale check -- showing history is fine, asserting it as current is not.
+* Gold keywords are searched in ``answer.text`` + citation quotes (a quote the answer shows is part of what the
+  asker reads). Forbidden (superseded) keywords are searched in ``answer.text`` only, and only count when the
+  gold keywords are absent -- showing history ("down from 30 days") is fine, asserting it as current is not.
 * Normalisation: lowercase, punctuation -> space, thousands separators dropped, number words -> digits
   ("fifteenth" -> "15th", "two" -> "2"), crude plural folding (trailing "s" on tokens > 3 chars).
 * Keywords are CNF: every inner list is an any-of group, all groups must match; each keyword is a phrase
-  matched on token boundaries.
+  anchored at a token start (open right edge, since the data uses stems like "approv"; closed after digits).
 * Citation valid iff some cited doc_id is in the evidence map of some gold fact.
 
 Outcome table (see ``keepline.rl.rewards`` for the reward attached to each)
@@ -40,6 +40,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from functools import lru_cache
 from collections.abc import Iterable, Mapping, Sequence
 
 from keepline.contracts import Action, Answer, EvidenceMap, Question, TruthFact
@@ -88,10 +89,24 @@ def normalize(text: str) -> str:
     return " ".join(tokens)
 
 
-def phrase_in(phrase: str, haystack_norm: str) -> bool:
-    """Token-boundary phrase match on already-normalised haystack."""
+@lru_cache(maxsize=8192)
+def _phrase_re(phrase: str) -> re.Pattern[str] | None:
     p = normalize(phrase)
-    return bool(p) and f" {p} " in f" {haystack_norm} "
+    if not p:
+        return None
+    tail = r"(?![0-9])" if p[-1].isdigit() else ""  # "60" must not match "600"
+    return re.compile(r"(?<![a-z0-9])" + re.escape(p) + tail)
+
+
+def phrase_in(phrase: str, haystack_norm: str) -> bool:
+    """Phrase match anchored at a token start; the end may be mid-token.
+
+    The data generator writes keywords as case-insensitive substrings and sometimes uses stems ("approv",
+    "30 min", "quarter" for "quarterly"), so the right edge is open. The left edge is anchored so "1st" never
+    matches "21st"; a keyword ending in a digit is also right-anchored so "60" never matches "600".
+    """
+    rx = _phrase_re(phrase)
+    return rx is not None and rx.search(haystack_norm) is not None
 
 
 def cnf_match(groups: Sequence[Sequence[str]], haystack_norm: str) -> bool:
@@ -106,10 +121,12 @@ def cnf_match(groups: Sequence[Sequence[str]], haystack_norm: str) -> bool:
 
 
 def _answer_haystacks(a: Answer) -> tuple[str, str]:
-    """(everything the asker sees, only what is asserted as current)."""
-    current = [a.text] + [c.quote for c in a.said if c.is_current]
-    history = [c.quote for c in a.said if not c.is_current]
-    return normalize(" ".join(current + history)), normalize(" ".join(current))
+    """(everything the asker sees, only the answer's own asserted text).
+
+    Forbidden (superseded) keywords are checked against ``answer.text`` only: evidence for a new fact version
+    often mentions the old value ("down from 30 days"), so checking receipts would false-flag stale answers.
+    """
+    return normalize(" ".join([a.text] + [c.quote for c in a.said])), normalize(a.text)
 
 
 def citation_valid(q: Question, a: Answer, ev: EvidenceMap) -> bool:

@@ -124,10 +124,11 @@ def test_env_caches_and_train_runs(tmp_path: Path) -> None:
     cache = tmp_path / "arm_cache.json"
     arms = [Arm(3, 0.35, 0.1), Arm(6, 0.35, 0.1)]
     env = AnswerEnv(agent, {}, {}, cache_path=cache, fingerprint="fp")
-    bandit, curve = train(env, _questions(20, Split.TRAIN), _questions(6, Split.DEV), arms=arms, epochs=3,
+    bandit, curve, _ = train(env, _questions(20, Split.TRAIN), _questions(6, Split.DEV), arms=arms, epochs=3,
                           seed=1, alpha_grid=(0.1, 1.0))  # fmt: skip
     assert bandit["dev"]["bandit"] == pytest.approx(bandit["dev"]["oracle"])
     assert bandit["per_area"]["recon"]["arm"] == arms[1].key
+    assert sum(v["pulls"] for v in bandit["arm_stats"].values()) == curve["steps"]
     assert curve["steps"] == 60 and set(curve["rolling"]) == {"bandit", "default", "best_fixed", "random", "oracle"}
     calls = agent.n_calls
     env2 = AnswerEnv(agent, {}, {}, cache_path=cache, fingerprint="fp")
