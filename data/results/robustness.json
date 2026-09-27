@@ -1,0 +1,1261 @@
+{
+  "split": "dev",
+  "seed": 7,
+  "n_questions": 167,
+  "levels": [
+    {
+      "level": 0,
+      "config": {
+        "typo": 0.0,
+        "lowercase": 0.0,
+        "punct_drop": 0.0,
+        "slang": 0.0,
+        "emoji": 0.0,
+        "fragment": 0.0,
+        "bot_per_day": 0,
+        "forward_dup": 0.0,
+        "wrong_claims": 0,
+        "jitter_min": 0,
+        "dropout": 0.0,
+        "chatter_mult": 1.0
+      },
+      "n_docs": 3914,
+      "facts_extracted": 514,
+      "examples": [],
+      "seconds": 2.6,
+      "systems": {
+        "plain": {
+          "accuracy_cited": {
+            "value": 0.4095,
+            "k": 43,
+            "n": 105,
+            "ci95": [
+              0.3203,
+              0.5052
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.6587,
+            "k": 110,
+            "n": 167,
+            "ci95": [
+              0.5839,
+              0.7263
+            ]
+          },
+          "abstain_precision": {
+            "value": null,
+            "k": 0,
+            "n": 0,
+            "ci95": null
+          },
+          "current_fact_accuracy": {
+            "value": 0.375,
+            "k": 9,
+            "n": 24,
+            "ci95": [
+              0.2116,
+              0.5729
+            ]
+          },
+          "mean_reward": {
+            "value": -0.9152,
+            "n": 167,
+            "ci95": [
+              -1.1261,
+              -0.7042
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.3333,
+            "k": 8,
+            "n": 24,
+            "ci95": [
+              0.1797,
+              0.5329
+            ]
+          },
+          "answer_rate": {
+            "value": 1.0,
+            "k": 167,
+            "n": 167,
+            "ci95": [
+              0.9775,
+              1.0
+            ]
+          },
+          "outcomes": {
+            "hallucination": 102,
+            "correct_cited": 45,
+            "correct_route": 11,
+            "stale_answer": 8,
+            "correct_uncited": 1
+          }
+        },
+        "keepline": {
+          "accuracy_cited": {
+            "value": 0.3333,
+            "k": 35,
+            "n": 105,
+            "ci95": [
+              0.2505,
+              0.428
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.4857,
+            "k": 34,
+            "n": 70,
+            "ci95": [
+              0.3725,
+              0.6005
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.4536,
+            "k": 44,
+            "n": 97,
+            "ci95": [
+              0.3582,
+              0.5526
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.2917,
+            "k": 7,
+            "n": 24,
+            "ci95": [
+              0.1491,
+              0.4917
+            ]
+          },
+          "mean_reward": {
+            "value": -0.0609,
+            "n": 167,
+            "ci95": [
+              -0.2262,
+              0.1043
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.4167,
+            "k": 10,
+            "n": 24,
+            "ci95": [
+              0.2447,
+              0.6117
+            ]
+          },
+          "answer_rate": {
+            "value": 0.4192,
+            "k": 70,
+            "n": 167,
+            "ci95": [
+              0.347,
+              0.495
+            ]
+          },
+          "outcomes": {
+            "correct_route": 45,
+            "unnecessary_abstain": 43,
+            "correct_cited": 35,
+            "hallucination": 24,
+            "wrong_route": 10,
+            "stale_answer": 10
+          }
+        },
+        "keepline_rl": {
+          "accuracy_cited": {
+            "value": 0.181,
+            "k": 19,
+            "n": 105,
+            "ci95": [
+              0.119,
+              0.2654
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.3448,
+            "k": 10,
+            "n": 29,
+            "ci95": [
+              0.1994,
+              0.5266
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.3696,
+            "k": 51,
+            "n": 138,
+            "ci95": [
+              0.2936,
+              0.4526
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.25,
+            "k": 6,
+            "n": 24,
+            "ci95": [
+              0.12,
+              0.449
+            ]
+          },
+          "mean_reward": {
+            "value": 0.0958,
+            "n": 167,
+            "ci95": [
+              -0.0148,
+              0.2063
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.25,
+            "k": 6,
+            "n": 24,
+            "ci95": [
+              0.12,
+              0.449
+            ]
+          },
+          "answer_rate": {
+            "value": 0.1737,
+            "k": 29,
+            "n": 167,
+            "ci95": [
+              0.1237,
+              0.2383
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 76,
+            "correct_route": 51,
+            "correct_cited": 19,
+            "wrong_route": 11,
+            "stale_answer": 6,
+            "hallucination": 4
+          }
+        }
+      }
+    },
+    {
+      "level": 1,
+      "config": {
+        "typo": 0.01,
+        "lowercase": 0.2,
+        "punct_drop": 0.1,
+        "slang": 0.2,
+        "emoji": 0.05,
+        "fragment": 0.1,
+        "bot_per_day": 2,
+        "forward_dup": 0.05,
+        "wrong_claims": 1,
+        "jitter_min": 5,
+        "dropout": 0.0,
+        "chatter_mult": 1.25
+      },
+      "n_docs": 4641,
+      "facts_extracted": 634,
+      "examples": [
+        {
+          "doc_id": "slack-000543",
+          "before": "Good q. If you restore to the primary the replication job overwrites the DR copy with whatever you just restored. Always use the restore box (HCU-RESTORE01).",
+          "after": "good q. if you restore to the primary the replication job overwrites the dr copy with whatever you just restored. always use the restore box (hcu-restore01)."
+        },
+        {
+          "doc_id": "slack-000591",
+          "before": "The CoreLink API key lives in the Core Integrations vault - ask Dave to grant you access.",
+          "after": "the corelink api key lives in the core integrations vault - ask dave to grant u access."
+        },
+        {
+          "doc_id": "slack-002012",
+          "before": "No, LCTRs are due within 15 calendar days of the transaction. Calendar, not business.",
+          "after": "no, lctrs are due within 15 calendar days of the transaction."
+        }
+      ],
+      "seconds": 2.8,
+      "systems": {
+        "plain": {
+          "accuracy_cited": {
+            "value": 0.3714,
+            "k": 39,
+            "n": 105,
+            "ci95": [
+              0.2851,
+              0.4669
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.6826,
+            "k": 114,
+            "n": 167,
+            "ci95": [
+              0.6086,
+              0.7484
+            ]
+          },
+          "abstain_precision": {
+            "value": null,
+            "k": 0,
+            "n": 0,
+            "ci95": null
+          },
+          "current_fact_accuracy": {
+            "value": 0.2083,
+            "k": 5,
+            "n": 24,
+            "ci95": [
+              0.0924,
+              0.4047
+            ]
+          },
+          "mean_reward": {
+            "value": -0.9874,
+            "n": 167,
+            "ci95": [
+              -1.1938,
+              -0.7809
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.375,
+            "k": 9,
+            "n": 24,
+            "ci95": [
+              0.2116,
+              0.5729
+            ]
+          },
+          "answer_rate": {
+            "value": 1.0,
+            "k": 167,
+            "n": 167,
+            "ci95": [
+              0.9775,
+              1.0
+            ]
+          },
+          "outcomes": {
+            "hallucination": 105,
+            "correct_cited": 41,
+            "correct_route": 11,
+            "stale_answer": 9,
+            "correct_uncited": 1
+          }
+        },
+        "keepline": {
+          "accuracy_cited": {
+            "value": 0.3048,
+            "k": 32,
+            "n": 105,
+            "ci95": [
+              0.2249,
+              0.3984
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.5147,
+            "k": 35,
+            "n": 68,
+            "ci95": [
+              0.3983,
+              0.6295
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.4343,
+            "k": 43,
+            "n": 99,
+            "ci95": [
+              0.341,
+              0.5326
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.25,
+            "k": 6,
+            "n": 24,
+            "ci95": [
+              0.12,
+              0.449
+            ]
+          },
+          "mean_reward": {
+            "value": -0.1019,
+            "n": 167,
+            "ci95": [
+              -0.2667,
+              0.0629
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.375,
+            "k": 9,
+            "n": 24,
+            "ci95": [
+              0.2116,
+              0.5729
+            ]
+          },
+          "answer_rate": {
+            "value": 0.4072,
+            "k": 68,
+            "n": 167,
+            "ci95": [
+              0.3356,
+              0.483
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 46,
+            "correct_route": 44,
+            "correct_cited": 32,
+            "hallucination": 26,
+            "wrong_route": 10,
+            "stale_answer": 9
+          }
+        },
+        "keepline_rl": {
+          "accuracy_cited": {
+            "value": 0.1524,
+            "k": 16,
+            "n": 105,
+            "ci95": [
+              0.096,
+              0.2333
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.4074,
+            "k": 11,
+            "n": 27,
+            "ci95": [
+              0.2451,
+              0.5927
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.3571,
+            "k": 50,
+            "n": 140,
+            "ci95": [
+              0.2826,
+              0.4394
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.125,
+            "k": 3,
+            "n": 24,
+            "ci95": [
+              0.0434,
+              0.31
+            ]
+          },
+          "mean_reward": {
+            "value": 0.0548,
+            "n": 167,
+            "ci95": [
+              -0.0564,
+              0.166
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.2083,
+            "k": 5,
+            "n": 24,
+            "ci95": [
+              0.0924,
+              0.4047
+            ]
+          },
+          "answer_rate": {
+            "value": 0.1617,
+            "k": 27,
+            "n": 167,
+            "ci95": [
+              0.1136,
+              0.225
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 79,
+            "correct_route": 50,
+            "correct_cited": 16,
+            "wrong_route": 11,
+            "hallucination": 6,
+            "stale_answer": 5
+          }
+        }
+      }
+    },
+    {
+      "level": 2,
+      "config": {
+        "typo": 0.03,
+        "lowercase": 0.4,
+        "punct_drop": 0.3,
+        "slang": 0.4,
+        "emoji": 0.1,
+        "fragment": 0.25,
+        "bot_per_day": 5,
+        "forward_dup": 0.1,
+        "wrong_claims": 2,
+        "jitter_min": 30,
+        "dropout": 0.1,
+        "chatter_mult": 1.5
+      },
+      "n_docs": 5497,
+      "facts_extracted": 808,
+      "examples": [
+        {
+          "doc_id": "slack-000336",
+          "before": "Heads up, the final EFT exchange is 16:30 Atlantic. Get corrections in before then. Learned that one the hard way.",
+          "after": "Heads up the final EFT exchange is 16:30 Atlantic"
+        },
+        {
+          "doc_id": "slack-001464",
+          "before": "Ah, so — Throttle anything bulk - CoreLink caps us at 600 requests a minute and locks the key for 15 min if you go over. That takes the portal down with it.",
+          "after": "ah, so — throttle anything bulk - corelink caps us at 600 requests a minute and locks the key ffor 15 min if u go over. that takes the portal down w/ it."
+        },
+        {
+          "doc_id": "slack-002229",
+          "before": "Default limits are $3,000 a day at POS and $1,000 at the ATM. We can raise them temporarily. I should really write that down somewhere.",
+          "after": "default limits are $3000 a day at pos and $1000 at the atm"
+        }
+      ],
+      "seconds": 4.7,
+      "systems": {
+        "plain": {
+          "accuracy_cited": {
+            "value": 0.2952,
+            "k": 31,
+            "n": 105,
+            "ci95": [
+              0.2165,
+              0.3885
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.7246,
+            "k": 121,
+            "n": 167,
+            "ci95": [
+              0.6523,
+              0.7867
+            ]
+          },
+          "abstain_precision": {
+            "value": null,
+            "k": 0,
+            "n": 0,
+            "ci95": null
+          },
+          "current_fact_accuracy": {
+            "value": 0.2917,
+            "k": 7,
+            "n": 24,
+            "ci95": [
+              0.1491,
+              0.4917
+            ]
+          },
+          "mean_reward": {
+            "value": -1.1174,
+            "n": 167,
+            "ci95": [
+              -1.3138,
+              -0.9209
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.2917,
+            "k": 7,
+            "n": 24,
+            "ci95": [
+              0.1491,
+              0.4917
+            ]
+          },
+          "answer_rate": {
+            "value": 1.0,
+            "k": 167,
+            "n": 167,
+            "ci95": [
+              0.9775,
+              1.0
+            ]
+          },
+          "outcomes": {
+            "hallucination": 114,
+            "correct_cited": 33,
+            "correct_route": 12,
+            "stale_answer": 7,
+            "correct_uncited": 1
+          }
+        },
+        "keepline": {
+          "accuracy_cited": {
+            "value": 0.2762,
+            "k": 29,
+            "n": 105,
+            "ci95": [
+              0.1997,
+              0.3685
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.5082,
+            "k": 31,
+            "n": 61,
+            "ci95": [
+              0.386,
+              0.6294
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.4151,
+            "k": 44,
+            "n": 106,
+            "ci95": [
+              0.3259,
+              0.5103
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.25,
+            "k": 6,
+            "n": 24,
+            "ci95": [
+              0.12,
+              0.449
+            ]
+          },
+          "mean_reward": {
+            "value": -0.0833,
+            "n": 167,
+            "ci95": [
+              -0.2405,
+              0.074
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.3333,
+            "k": 8,
+            "n": 24,
+            "ci95": [
+              0.1797,
+              0.5329
+            ]
+          },
+          "answer_rate": {
+            "value": 0.3653,
+            "k": 61,
+            "n": 167,
+            "ci95": [
+              0.296,
+              0.4406
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 52,
+            "correct_route": 45,
+            "correct_cited": 29,
+            "hallucination": 23,
+            "wrong_route": 10,
+            "stale_answer": 8
+          }
+        },
+        "keepline_rl": {
+          "accuracy_cited": {
+            "value": 0.1238,
+            "k": 13,
+            "n": 105,
+            "ci95": [
+              0.0738,
+              0.2004
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.4583,
+            "k": 11,
+            "n": 24,
+            "ci95": [
+              0.2789,
+              0.6493
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.3566,
+            "k": 51,
+            "n": 143,
+            "ci95": [
+              0.2828,
+              0.438
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.0833,
+            "k": 2,
+            "n": 24,
+            "ci95": [
+              0.0232,
+              0.2585
+            ]
+          },
+          "mean_reward": {
+            "value": 0.0311,
+            "n": 167,
+            "ci95": [
+              -0.0785,
+              0.1406
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.25,
+            "k": 6,
+            "n": 24,
+            "ci95": [
+              0.12,
+              0.449
+            ]
+          },
+          "answer_rate": {
+            "value": 0.1437,
+            "k": 24,
+            "n": 167,
+            "ci95": [
+              0.0985,
+              0.2049
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 81,
+            "correct_route": 51,
+            "correct_cited": 13,
+            "wrong_route": 11,
+            "stale_answer": 6,
+            "hallucination": 5
+          }
+        }
+      }
+    },
+    {
+      "level": 3,
+      "config": {
+        "typo": 0.06,
+        "lowercase": 0.6,
+        "punct_drop": 0.5,
+        "slang": 0.6,
+        "emoji": 0.2,
+        "fragment": 0.4,
+        "bot_per_day": 10,
+        "forward_dup": 0.2,
+        "wrong_claims": 3,
+        "jitter_min": 120,
+        "dropout": 0.25,
+        "chatter_mult": 2.0
+      },
+      "n_docs": 6978,
+      "facts_extracted": 1009,
+      "examples": [
+        {
+          "doc_id": "slack-000162",
+          "before": "FYI for anyone touching this — If I get hit by a bus: Paylane admin is in 1Password, Finance vault. Please don't actually need it.",
+          "after": "fyi for anyone touching this — if i get hit by a bus: paylane admmin is in 1password, finance vault. pls dont actually need it."
+        },
+        {
+          "doc_id": "slack-001425",
+          "before": "remind me to hand you the backup codes from my desk before my last day",
+          "after": "remind me to hand uou the backup codes from my desk before my last day"
+        },
+        {
+          "doc_id": "slack-002796",
+          "before": "Our contact at Bluenose Central is Rachel Oakes in payment ops -- she's great, answers same day.",
+          "after": "our contact at bluenose central is rachel oakes in payment ops -- shes great answers same day"
+        }
+      ],
+      "seconds": 4.0,
+      "systems": {
+        "plain": {
+          "accuracy_cited": {
+            "value": 0.2381,
+            "k": 25,
+            "n": 105,
+            "ci95": [
+              0.1668,
+              0.3279
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.7784,
+            "k": 130,
+            "n": 167,
+            "ci95": [
+              0.7096,
+              0.8348
+            ]
+          },
+          "abstain_precision": {
+            "value": null,
+            "k": 0,
+            "n": 0,
+            "ci95": null
+          },
+          "current_fact_accuracy": {
+            "value": 0.0833,
+            "k": 2,
+            "n": 24,
+            "ci95": [
+              0.0232,
+              0.2585
+            ]
+          },
+          "mean_reward": {
+            "value": -1.274,
+            "n": 167,
+            "ci95": [
+              -1.456,
+              -1.092
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.4583,
+            "k": 11,
+            "n": 24,
+            "ci95": [
+              0.2789,
+              0.6493
+            ]
+          },
+          "answer_rate": {
+            "value": 1.0,
+            "k": 167,
+            "n": 167,
+            "ci95": [
+              0.9775,
+              1.0
+            ]
+          },
+          "outcomes": {
+            "hallucination": 119,
+            "correct_cited": 26,
+            "stale_answer": 11,
+            "correct_route": 10,
+            "correct_uncited": 1
+          }
+        },
+        "keepline": {
+          "accuracy_cited": {
+            "value": 0.2762,
+            "k": 29,
+            "n": 105,
+            "ci95": [
+              0.1997,
+              0.3685
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.5714,
+            "k": 40,
+            "n": 70,
+            "ci95": [
+              0.4548,
+              0.6806
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.4536,
+            "k": 44,
+            "n": 97,
+            "ci95": [
+              0.3582,
+              0.5526
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.25,
+            "k": 6,
+            "n": 24,
+            "ci95": [
+              0.12,
+              0.449
+            ]
+          },
+          "mean_reward": {
+            "value": -0.1752,
+            "n": 167,
+            "ci95": [
+              -0.3451,
+              -0.0052
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.375,
+            "k": 9,
+            "n": 24,
+            "ci95": [
+              0.2116,
+              0.5729
+            ]
+          },
+          "answer_rate": {
+            "value": 0.4192,
+            "k": 70,
+            "n": 167,
+            "ci95": [
+              0.347,
+              0.495
+            ]
+          },
+          "outcomes": {
+            "correct_route": 45,
+            "unnecessary_abstain": 44,
+            "hallucination": 31,
+            "correct_cited": 29,
+            "wrong_route": 9,
+            "stale_answer": 9
+          }
+        },
+        "keepline_rl": {
+          "accuracy_cited": {
+            "value": 0.1143,
+            "k": 12,
+            "n": 105,
+            "ci95": [
+              0.0666,
+              0.1892
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.6,
+            "k": 18,
+            "n": 30,
+            "ci95": [
+              0.4232,
+              0.7541
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.3796,
+            "k": 52,
+            "n": 137,
+            "ci95": [
+              0.3026,
+              0.4631
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.0833,
+            "k": 2,
+            "n": 24,
+            "ci95": [
+              0.0232,
+              0.2585
+            ]
+          },
+          "mean_reward": {
+            "value": -0.0423,
+            "n": 167,
+            "ci95": [
+              -0.1667,
+              0.082
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.3333,
+            "k": 8,
+            "n": 24,
+            "ci95": [
+              0.1797,
+              0.5329
+            ]
+          },
+          "answer_rate": {
+            "value": 0.1796,
+            "k": 30,
+            "n": 167,
+            "ci95": [
+              0.1288,
+              0.2449
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 75,
+            "correct_route": 52,
+            "correct_cited": 12,
+            "wrong_route": 10,
+            "hallucination": 10,
+            "stale_answer": 8
+          }
+        }
+      }
+    },
+    {
+      "level": 4,
+      "config": {
+        "typo": 0.1,
+        "lowercase": 0.8,
+        "punct_drop": 0.7,
+        "slang": 0.8,
+        "emoji": 0.3,
+        "fragment": 0.6,
+        "bot_per_day": 20,
+        "forward_dup": 0.3,
+        "wrong_claims": 4,
+        "jitter_min": 720,
+        "dropout": 0.4,
+        "chatter_mult": 3.0
+      },
+      "n_docs": 9498,
+      "facts_extracted": 1497,
+      "examples": [
+        {
+          "doc_id": "slack-000462",
+          "before": "When the sync stalls just restart the Okta AD Agent service. Don't reboot the DC for that. I should really write that down somewhere.",
+          "after": "when the sync stals just restart the okta ad agent service dont reboot the dc fro that"
+        },
+        {
+          "doc_id": "slack-000849",
+          "before": "Order matters for leavers: 1Password vault ownership gets transferred, THEN Okta gets disabled.",
+          "after": "Order matters for leavers: 1Pssword vault ownership gets transferred THEN Okta gets disabled"
+        },
+        {
+          "doc_id": "slack-003357",
+          "before": "Schedule change: recon job now at 02:15 instead of the old slot. Fewer false mismatches from half-written extract files. I should really write that down somewhere.",
+          "after": "schedule change: recon job now at 02:15 instead of the pld slot fewer false mismatches from half-wrritten extract files i should really write that down somewhere 😅"
+        }
+      ],
+      "seconds": 5.6,
+      "systems": {
+        "plain": {
+          "accuracy_cited": {
+            "value": 0.1619,
+            "k": 17,
+            "n": 105,
+            "ci95": [
+              0.1036,
+              0.2441
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.8323,
+            "k": 139,
+            "n": 167,
+            "ci95": [
+              0.7683,
+              0.8814
+            ]
+          },
+          "abstain_precision": {
+            "value": null,
+            "k": 0,
+            "n": 0,
+            "ci95": null
+          },
+          "current_fact_accuracy": {
+            "value": 0.0417,
+            "k": 1,
+            "n": 24,
+            "ci95": [
+              0.0074,
+              0.2024
+            ]
+          },
+          "mean_reward": {
+            "value": -1.4332,
+            "n": 167,
+            "ci95": [
+              -1.5951,
+              -1.2714
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.5,
+            "k": 12,
+            "n": 24,
+            "ci95": [
+              0.3143,
+              0.6857
+            ]
+          },
+          "answer_rate": {
+            "value": 1.0,
+            "k": 167,
+            "n": 167,
+            "ci95": [
+              0.9775,
+              1.0
+            ]
+          },
+          "outcomes": {
+            "hallucination": 127,
+            "correct_cited": 18,
+            "stale_answer": 12,
+            "correct_route": 9,
+            "correct_uncited": 1
+          }
+        },
+        "keepline": {
+          "accuracy_cited": {
+            "value": 0.2095,
+            "k": 22,
+            "n": 105,
+            "ci95": [
+              0.1426,
+              0.2969
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.6034,
+            "k": 35,
+            "n": 58,
+            "ci95": [
+              0.4749,
+              0.7191
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.422,
+            "k": 46,
+            "n": 109,
+            "ci95": [
+              0.3335,
+              0.5158
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.25,
+            "k": 6,
+            "n": 24,
+            "ci95": [
+              0.12,
+              0.449
+            ]
+          },
+          "mean_reward": {
+            "value": -0.174,
+            "n": 167,
+            "ci95": [
+              -0.3328,
+              -0.0152
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.4167,
+            "k": 10,
+            "n": 24,
+            "ci95": [
+              0.2447,
+              0.6117
+            ]
+          },
+          "answer_rate": {
+            "value": 0.3473,
+            "k": 58,
+            "n": 167,
+            "ci95": [
+              0.2793,
+              0.4222
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 53,
+            "correct_route": 47,
+            "hallucination": 25,
+            "correct_cited": 22,
+            "wrong_route": 10,
+            "stale_answer": 10
+          }
+        },
+        "keepline_rl": {
+          "accuracy_cited": {
+            "value": 0.0762,
+            "k": 8,
+            "n": 105,
+            "ci95": [
+              0.0391,
+              0.1432
+            ]
+          },
+          "hallucination_rate": {
+            "value": 0.6923,
+            "k": 18,
+            "n": 26,
+            "ci95": [
+              0.5001,
+              0.835
+            ]
+          },
+          "abstain_precision": {
+            "value": 0.3546,
+            "k": 50,
+            "n": 141,
+            "ci95": [
+              0.2805,
+              0.4365
+            ]
+          },
+          "current_fact_accuracy": {
+            "value": 0.0833,
+            "k": 2,
+            "n": 24,
+            "ci95": [
+              0.0232,
+              0.2585
+            ]
+          },
+          "mean_reward": {
+            "value": -0.0925,
+            "n": 167,
+            "ci95": [
+              -0.2137,
+              0.0287
+            ]
+          },
+          "n_questions": 167,
+          "stale_rate": {
+            "value": 0.375,
+            "k": 9,
+            "n": 24,
+            "ci95": [
+              0.2116,
+              0.5729
+            ]
+          },
+          "answer_rate": {
+            "value": 0.1557,
+            "k": 26,
+            "n": 167,
+            "ci95": [
+              0.1085,
+              0.2183
+            ]
+          },
+          "outcomes": {
+            "unnecessary_abstain": 80,
+            "correct_route": 50,
+            "wrong_route": 11,
+            "stale_answer": 9,
+            "hallucination": 9,
+            "correct_cited": 8
+          }
+        }
+      }
+    }
+  ]
+}
