@@ -11,6 +11,15 @@ Clock: started 2026-09-26 20:41. Judging 2026-09-27.
 | M3 bandit + benchmark + polish + Snowflake assets | ⏳ |
 | M4 integration, demo script, cached answers, README | ⏳ coordinator |
 
+## PAUSED 2026-09-26 ~23:45 (user request, usage budget) — WIP commit 644d09c
+- A · Data: ✅ DONE (commit 941d480). 168 truth facts, 3,914 docs, 771 questions, test hash ea2160d2…aa7c81e.
+- B · Memory+Agent: paused while rewriting `keepline/memory/link.py` (idf-weighted similarity, number extraction,
+  cue detection on verbatim quotes for supersession).
+- C · RL+Eval: paused while auditing grader false negatives; observed agent forced-answer accuracy ~41% on
+  answerable questions with weak calibration → B's extraction/answering is the main quality lever.
+- D · Products+App+Snowflake: paused while building the "My Knowledge" page; had been told Snowflake is live.
+- Resume: SendMessage each agent "continue" (their context is preserved), or restart from this file.
+
 ## Decisions
 - Local-first engine (SQLite + BM25) mirrors Snowflake schema 1:1; Snowflake assets are the deploy target.
 - Deterministic no-LLM path for every stage; Claude/Cortex optional, disk-cached (`data/cache/llm`).
