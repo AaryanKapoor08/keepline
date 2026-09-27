@@ -483,3 +483,142 @@ def results(name: str) -> Any:
     if d is None:
         raise HTTPException(404, f"{name} not generated yet")
     return d
+
+
+# ----------------------------------------------------------------------------------------------- GitHub-style memory
+import hashlib  # noqa: E402
+
+
+def _sha(fid: str) -> str:
+    return hashlib.sha1(fid.encode()).hexdigest()[:7]
+
+
+def _commit(f: Any) -> dict[str, Any]:
+    s = store()
+    d = s.doc(f.source_doc_ids[0]) if f.source_doc_ids else None
+    return {
+        "sha": _sha(f.id), "fact_id": f.id, "message": f.text, "quote": f.quote, "kind": str(f.kind), "area_id": f.area_id,
+        "author": f.stated_by, "author_name": (_p(f.stated_by) or {}).get("name"),
+        "date": (f.learned_at.date().isoformat() if f.learned_at else f.valid_from.isoformat()),
+        "valid_from": f.valid_from.isoformat(), "valid_to": f.valid_to.isoformat() if f.valid_to else None,
+        "is_current": f.is_current, "supersedes": f.supersedes, "superseded_by": f.superseded_by,
+        "review_status": str(f.review_status),
+        "doc_id": d.id if d else None, "source_type": str(d.source_type) if d else None, "url": d.url if d else None,
+    }
+
+
+def _said(facts: list[Any]) -> list[Any]:
+    from keepline.contracts import Epistemic
+
+    return [f for f in facts if f.epistemic == Epistemic.SAID and _ok(f.text)]
+
+
+def get_history(area_id: str) -> dict[str, Any]:
+    s = store()
+    facts = _said(s.facts(area_id=area_id))
+    commits = sorted((_commit(f) for f in facts), key=lambda c: (c["date"], c["sha"]), reverse=True)
+    by = {c["fact_id"]: c for c in commits}
+    diffs = []
+    for c in commits:
+        if c["supersedes"] and c["supersedes"] in by:
+            o = by[c["supersedes"]]
+            diffs.append({"old": o, "new": c, "replaced_on": c["valid_from"]})
+    a = s.area(area_id)
+    try:
+        from keepline.products.risk import risk_map
+
+        r = next((x for x in risk_map(s, TODAY, with_trend=False) if x.area_id == area_id), None)
+        owners = [{"person_id": p, "name": (_p(p) or {}).get("name"), "score": sc} for p, sc in (r.experts[: max(1, r.bus_factor)] if r else [])]
+    except Exception:
+        owners = []
+    return {"area_id": area_id, "area_name": a.name if a else area_id, "commits": commits[:80], "n_commits": len(commits),
+            "diffs": diffs, "codeowners": owners}
+
+
+def get_latest_commits(n: int = 3) -> list[dict[str, Any]]:
+    facts = _said(store().facts())
+    cs = sorted((_commit(f) for f in facts), key=lambda c: (c["supersedes"] is not None, c["date"]), reverse=True)
+    return cs[:n]
+
+
+def get_person_sheet(pid: str) -> dict[str, Any]:
+    s = store()
+    p = s.person(pid)
+    if not p:
+        raise HTTPException(404, "unknown person")
+    prof = get_profile(pid)
+    pack = get_handoff(pid)
+    from keepline.products.risk import risk_map
+
+    risks = {r.area_id: r for r in risk_map(s, TODAY, with_trend=False)}
+    owner_of = [a for a, r in risks.items() if any(e[0] == pid for e in r.experts[: r.bus_factor])]
+    others = {}
+    for a in prof["areas"]:
+        r = risks.get(a["area_id"])
+        if r:
+            others[a["area_id"]] = [{"person_id": e[0], "name": (_p(e[0]) or {}).get("name"), "strong": i < r.bus_factor}
+                                    for i, e in enumerate(r.experts) if e[0] != pid][:3]
+    facts = s.facts(person_id=pid)
+    return {
+        "person": to_dict(p), "profile": prof, "pack": pack, "others": others, "owner_of": owner_of,
+        "open_reviews": 1 if any(str(f.review_status) == "pending" for f in _said(facts)) else 0,
+        "pending_facts": sum(1 for f in _said(facts) if str(f.review_status) == "pending"),
+        "open_issues": len(prof.get("gaps", [])),
+    }
+
+
+def get_review(pid: str) -> dict[str, Any]:
+    facts = [f for f in _said(store().facts(person_id=pid)) if str(f.review_status) == "pending"]
+    facts.sort(key=lambda f: (f.kind != FactKind.LANDMINE, -f.confidence))
+    return {"person_id": pid, "name": (_p(pid) or {}).get("name"), "n_pending": len(facts),
+            "commits": [_commit(f) for f in facts[:8]], "issues": get_profile(pid).get("gaps", [])}
+
+
+def do_project_sim(template_id: str | None, brief: str | None, weeks: int | None, leaves: dict[str, int] | None) -> dict[str, Any]:
+    from keepline.products.project_sim import TEMPLATES, simulate_project
+
+    t = next((x for x in TEMPLATES if x["id"] == template_id), None)
+    b = brief or (t["brief"] if t else TEMPLATES[0]["brief"])
+    w = weeks or (t["weeks"] if t else 12)
+    r = simulate_project(store(), b, TODAY, weeks=w, leaves=leaves or None)
+    r["template_id"] = t["id"] if t else None
+    return r
+
+
+class SimIn(BaseModel):
+    template_id: str | None = None
+    brief: str | None = None
+    weeks: int | None = None
+    leaves: dict[str, int] | None = None
+
+
+@app.get("/history/latest")
+def history_latest() -> list[dict[str, Any]]:
+    return get_latest_commits()
+
+
+@app.get("/history/{area_id}")
+def history(area_id: str) -> dict[str, Any]:
+    return get_history(area_id)
+
+
+@app.get("/person/{pid}")
+def person_sheet(pid: str) -> dict[str, Any]:
+    return get_person_sheet(pid)
+
+
+@app.get("/review/{pid}")
+def review(pid: str) -> dict[str, Any]:
+    return get_review(pid)
+
+
+@app.get("/project_sim/templates")
+def sim_templates() -> list[dict[str, Any]]:
+    from keepline.products.project_sim import TEMPLATES
+
+    return TEMPLATES
+
+
+@app.post("/project_sim")
+def project_sim(body: SimIn) -> dict[str, Any]:
+    return do_project_sim(body.template_id, body.brief, body.weeks, body.leaves)

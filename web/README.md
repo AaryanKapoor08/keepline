@@ -15,26 +15,25 @@ Refresh the snapshot after the data or results change: `python scripts/export_we
 Keys: `→` / `Space` next beat · `←` back · `1`–`9` jump to a beat · `P` presenter focus (collapses the sidebar).
 Demo clock: Friday 2026-09-04. Sarah Chen's last day is Fri 2026-09-11.
 
-## Presenter script: 2 minutes (one page per beat; → / Space moves to the next page)
+## The 5-second pitch
+"Keepline is GitHub for company knowledge: every fact is a commit with an author and a receipt, changes are diffs, the leaver reviews her knowledge like a pull request, and you can check out what the company believed on any date."
 
-Each page opens with one headline and one black button. Press the button, then say the line.
+## Presenter script: 2 minutes (→ / Space moves to the next page)
 
 | Page | Click | Say |
 |---|---|---|
-| Home | none | "Sarah Chen is Harbourline's senior backend engineer. She leaves Friday. 46 things leave with her, and 3 systems have no one else who knows them." |
-| Knowledge | **Replay history**, then click a red node | "This is her knowledge as a workflow: Sarah → her systems → what only she knows → who should take it over. Every fact keeps its history: the recon rule 'skip the 1st' was replaced by 'skip the 1st and 15th'. Click any node for the receipts." |
-| Risk | **Simulate her leaving** | "Flip the switch. Three systems go to zero people. 4 systems only she can access, 12 never-do-this rules, 26 recurring tasks with no owner." |
-| Handoff | **Generate handoff pack**, open **Landmines**, then **Sarah signs off** | "The handoff pack writes itself from her own messages, each line with a quote, a date and a link. She confirms it and signs." |
-| Ask | (first answer is pre-loaded), then the NAS question, then **Ask Mike** | "Alex starts Monday. He gets the current rule with its source. When there's no evidence, Keepline says 'I don't know, ask Mike' instead of guessing." |
-| Simulator | (conflict is pre-loaded), then **Why** | "Before you act, check the plan. Rotating the CoreLink key this Friday conflicts with a rule Sarah wrote on June 10." |
-| Proof | **Train**, then **Add noise** | "On 216 held-out questions: 43% right with a source vs 36% for plain search, confidently wrong 44% vs 72%, routed to the right person 100% vs 57%. The bandit learns when to answer, abstain or route. Honestly, its thresholds haven't beaten the calibrated default yet." |
-| Snowflake | **Execute workflow** | "All of it runs inside Snowflake, so the data never leaves. Glean finds what your company knows. Keepline shows what it's about to forget." |
+| Home | Sarah in **Upcoming departures** | "This is Harbourline's COO dashboard. Five of ten critical areas are known by one person, and Sarah Chen leaves in 7 days." |
+| Knowledge (Sarah's sheet) | open **Don'ts**, expand one; then ask pill 1 and pill 3 | "Here's what she knows, her don'ts, what she's handling, what only she can access, and who else knows it: for three systems, nobody. Ask about her areas: you get the current rule with a receipt, or 'I don't know, ask Mike'." |
+| Knowledge (Alex) | close the sheet, click **View as Alex** | "Alex joins her team Monday. Keepline shows him who to ask about what, and the don'ts to learn first." |
+| History | **Open reviews**, then **May 31** vs **Today** | "Every fact has a history. The recon rule was a diff: skip the 1st, then the 1st and 15th. Sarah reviews what was captured like a pull request; nothing is shared until she merges it. Check out any date, which is Snowflake Time Travel." |
+| Simulate | **Run simulation**, switch Fastest ↔ Balanced, then tap **Aisha** in What-if | "Before staffing the CoreLink v3 upgrade, play out 2,000 futures. Fastest leaves an area uncovered 100% of the time. Balanced pairs Aisha as a learner and cuts that to 64%. If Aisha also leaves mid-project, you see what stalls. It's a recommendation for a manager to approve, never a performance score." |
+| Proof | **Train** | "On 216 held-out questions: 43% right with a source vs 36%; confidently wrong 44% vs 72%. The bandit learns when to answer, abstain or route; honestly, it hasn't beaten the calibrated default yet." |
+| Snowflake | **Execute workflow** | "It all runs inside Snowflake. Glean finds what your company knows. Keepline shows what it's about to forget." |
 
 ## 4-minute version (additions)
 
-- Knowledge: click Reconciliation, then the landmines node, and read one receipt aloud.
-- Risk: click **View all** to open the full lists.
-- Ask: open **Ask your own question** and type a live question (needs the API running).
-- Simulator: try "Run the reconciliation job manually on the 15th".
-- Proof: drag the noise slider from Clean to Brutal. Plain search gets worse; Keepline holds or abstains.
-- Snowflake: open **Market** on the pricing card.
+- Home: read the three at-risk areas and the latest changes (each with a short commit hash).
+- Knowledge: click Mike and Tom as well. Point out that lines show hands-on knowledge only, not job titles.
+- History: switch areas (CoreLink API: key rotation 90 → 60 days; vendor rep Dan Holt → Maria Santos). Approve one fact and correct another.
+- Simulate: try the mobile-app and FINTRAC templates. Read "Where we lack / strong / lose" and the timeline markers. Run the decision check "Rotate the CoreLink API key this Friday" → Conflict → Why.
+- Proof: drag the noise slider from Clean to Brutal.

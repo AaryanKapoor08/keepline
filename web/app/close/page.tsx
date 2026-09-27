@@ -28,7 +28,7 @@ export default function ClosePage() {
     { id: "doc", label: "Docs", icon: "doc", trigger: true, state: st("doc") },
     { id: "privacy", label: "Privacy filter", sub: "DMs excluded · row access policies", icon: "shield", state: st("privacy") },
     { id: "extract", label: "Extract facts", sub: "AI_EXTRACT", icon: "extract", state: st("extract") },
-    { id: "memory", label: "Versioned memory", sub: "Time Travel", icon: "history", state: st("memory") },
+    { id: "memory", label: "Versioned memory", sub: "Time Travel = checkout any date", icon: "history", state: st("memory") },
     { id: "agent", label: "Answer agent", sub: "Cortex Search + Agent", icon: "bot", state: st("agent") },
     { id: "out", label: "Answer · Abstain · Route", icon: "split", state: st("out"), wide: true },
   ];
