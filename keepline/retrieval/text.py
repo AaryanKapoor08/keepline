@@ -25,7 +25,8 @@ STOPWORDS = frozenset(
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+(?:['\-][a-z0-9]+)*")
 _ORDINAL_RE = re.compile(r"^\d+(st|nd|rd|th)$")
-_NUM_RE = re.compile(r"\b(\d{1,4})(?:st|nd|rd|th)?\b")
+_NUM_RE = re.compile(r"\b(\d{1,4})(?:st|nd|rd|th|am|pm|h)?\b", re.I)
+_WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 
 
 @lru_cache(maxsize=65536)
@@ -82,10 +83,14 @@ _WORD_NUM.update({w: str(i + 1) for i, w in enumerate(
 def numbers(text: str) -> frozenset[str]:
     """Numeric values mentioned ('the 1st and 15th' -> {'1', '15'}; 'five days' -> {'5'}); ticket ids, emails,
     urls, ISO dates and years are ignored so they never look like a changed value."""
-    times = {f"{int(h)}:{m}" for h, m in re.findall(r"\b(\d{1,2}):(\d{2})\b", text)}  # "06:15" is one value
+    # "06:15" is one value; "10:00" == "10am" == "10"
+    times = {f"{int(h)}:{m}" if m != "00" else str(int(h)) for h, m in re.findall(r"\b(\d{1,2}):(\d{2})\b", text)}
     clean = _NOISE_NUM.sub(" ", text)
     out = {m.group(1).lstrip("0") or "0" for m in _NUM_RE.finditer(clean)} | times
-    out.update(_WORD_NUM[w] for w in re.findall(r"[a-z]+", clean.lower()) if w in _WORD_NUM and w != "second")
+    words = re.findall(r"[a-z]+", clean.lower())
+    out.update(_WORD_NUM[w] for w in words if w in _WORD_NUM and w != "second")
+    # weekdays are slot values too: "timesheets due Monday" -> "due Friday" is a changed value
+    out.update(f"wd:{w.rstrip('s')}" for w in words if w.rstrip("s") in _WEEKDAYS)
     return frozenset(out)
 
 

@@ -19,7 +19,10 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from typing import Any, Sequence
 
-from keepline.config import DEMO_TODAY
+import json
+from pathlib import Path
+
+from keepline.config import DEMO_TODAY, RESULTS_DIR
 from keepline.contracts import (
     Action,
     Answer,
@@ -193,8 +196,8 @@ class _Cand:
 
     @property
     def support(self) -> float:
-        return (0.5 * self.coverage + 0.12 * self.kind_match + 0.1 * self.area_match + 0.08 * (1 - self.missing_key)
-                + 0.12 * self.type_match + 0.08 * self.rel)
+        return (0.45 * self.coverage + 0.08 * self.kind_match + 0.07 * self.area_match
+                + 0.08 * (1 - self.missing_key) + 0.12 * self.type_match + 0.2 * self.rel)
 
 
 @dataclass
@@ -260,6 +263,7 @@ class AnswerAgent:
             self.name_to_id.setdefault(p.name.split()[0].lower(), p.id)
         self._sentences: dict[tuple[str, bool], list[tuple[int, str, str, datetime]]] = {}
         self._ctx_cache: dict[str, frozenset[str]] = {}
+        self.calibrator = load_calibrator()
         self.doc_titles = {r["id"]: r["title"] for r in store.conn.execute("SELECT id, title FROM documents")}
         self.thread_children: dict[str, list[str]] = defaultdict(list)
         for d, root in self.thread_root.items():
@@ -271,7 +275,10 @@ class AnswerAgent:
         named = self.index.areas_named(question)
         if named:
             return named[0]
-        return self.linker.best(question)
+        linked = self.linker.best(question)
+        if linked:
+            return linked
+        return self._vote_area(self.index.search(question, k=8), plurality=True)
 
     def context_features(self, question: str, asker_id: str, *, as_of: date | None = None) -> dict[str, float]:
         return dict(self._analyze(question, asker_id, as_of, PolicyParams()).features)
@@ -300,20 +307,31 @@ class AnswerAgent:
         intents = [k for k, pat in INTENT_CUES if pat.search(question)]
         hits = self.index.search(question, k=max(3 * params.k, 24), as_of=as_of, visible_to=asker_id,
                                  source_weights=params.source_weights)
-        area_id = self.classify_area(question) or self._vote_area(hits)
+        area_id = (self.index.areas_named(question) or [None])[0] or self.linker.best(question) \
+            or self._vote_area(hits, plurality=True)
         atype = answer_type(question, is_routing)
         q_terms = self._query_terms(question, atype)
         cands = self._candidates(hits, q_terms, intents, area_id, as_of, asker_id, params, atype)
         doc_hits = [h for h in hits if h.fact_id is None][: params.k]
         experts = self._experts(area_id, asker_id, as_of)
         feats = self._features(cands, doc_hits, area_id, is_routing, experts, q_terms)
-        conf = calibrated_confidence(feats) if cands else 0.0
+        feats["formula_confidence"] = calibrated_confidence(feats) if cands else 0.0
+        conf = self._calibrate(feats) if cands else 0.0
         feats["confidence"] = conf
         an = _Analysis(question, asker_id, as_of, area_id, is_routing, intents, cands, doc_hits, experts, feats, conf)
         self._cache[key] = an
         if len(self._cache) > self.CACHE_SIZE:
             self._cache.popitem(last=False)
         return an
+
+    def _calibrate(self, feats: dict[str, float]) -> float:
+        """Learned calibrator (``data/results/calibrator.json``: {"bias": b, "weights": {feature: w}}) when present,
+        else the documented hand-set formula. Missing features count as 0."""
+        if self.calibrator is None:
+            return feats["formula_confidence"]
+        w = self.calibrator.get("weights", {})
+        z = float(self.calibrator.get("bias", 0.0)) + sum(float(v) * feats.get(k, 0.0) for k, v in w.items())
+        return 1.0 / (1.0 + math.exp(-max(-30.0, min(30.0, z))))
 
     def _query_terms(self, question: str, atype: str | None = None) -> dict[str, float]:
         """Content terms of the question with idf weights (filler like 'anything'/'today' removed; for
@@ -325,7 +343,7 @@ class AnswerAgent:
         top = max(self.index.idf.values(), default=1.0)
         return {t: (self.index.idf.get(t, top) if t != NEG_TERM else 0.6 * top) for t in terms}
 
-    def _vote_area(self, hits: Sequence[Hit]) -> str | None:
+    def _vote_area(self, hits: Sequence[Hit], plurality: bool = False) -> str | None:
         votes: dict[str, float] = defaultdict(float)
         for h in hits[:8]:
             if h.area_id:
@@ -333,7 +351,7 @@ class AnswerAgent:
         if not votes:
             return None
         best = max(sorted(votes), key=lambda a: votes[a])
-        return best if votes[best] >= 0.5 * sum(votes.values()) else None
+        return best if plurality or votes[best] >= 0.5 * sum(votes.values()) else None
 
     def _visible(self, f: Fact, asker_id: str) -> bool:
         return str(f.visibility) == Visibility.PUBLIC or asker_id in self.participants.get(f.id, ())
@@ -482,7 +500,7 @@ class AnswerAgent:
                     key = (cov + 0.15 * type_matches(atype, sent), cov)
                     if best is None or key > best[:2]:
                         best, best_doc = (key[0], cov, i, sent, who, ts), doc_id
-            if best is None or best[1] < 0.25:
+            if best is None or best[1] < 0.15:
                 continue
             _, cov, i, sent, who, ts = best
             sset = content_set(sent)
@@ -492,7 +510,7 @@ class AnswerAgent:
             kind, conf = classify_kind(sent)
             fact = Fact(id=f"raw:{best_doc}:{i}", text=sent, kind=kind or FactKind.FACT, area_id=h.area_id,
                         stated_by=who, source_doc_ids=[best_doc], quote=sent, valid_from=ts.date(), learned_at=ts,
-                        confidence=round(0.25 + 0.2 * conf, 3), subject=None, extractor="raw")
+                        confidence=round(0.45 + 0.2 * conf, 3), subject=None, extractor="raw")
             if fact.id in have:
                 continue
             cov, missing = self._coverage(q_terms, fact)
@@ -534,6 +552,10 @@ class AnswerAgent:
             "n_candidates": float(len(cands)),
             "n_doc_hits": float(len(doc_hits)),
             "top_doc_score": math.log1p(doc_hits[0].score) if doc_hits else 0.0,
+            "top_fact_score": math.log1p(max((c.retrieval for c in cands if not c.raw), default=0.0)),
+            "top_rel": top.rel if top else 0.0,
+            "doc_fact_agree": self._doc_fact_agree(top, cands),
+            "n_raw_candidates": float(sum(c.raw for c in cands)),
             "area_known": 1.0 if area_id else 0.0,
             "is_routing": 1.0 if is_routing else 0.0,
             "has_expert": 1.0 if experts else 0.0,
@@ -541,6 +563,17 @@ class AnswerAgent:
             "has_superseded": 1.0 if top and top.replaced else 0.0,
             "n_query_terms": float(len(q_terms)),
         }
+
+    @staticmethod
+    def _doc_fact_agree(top: _Cand | None, cands: list[_Cand]) -> float:
+        """1.0 when the best raw doc sentence and the best stored fact say the same thing (or are the same
+        candidate), 0.0 when they disagree, 0.5 when only one kind of evidence exists."""
+        best_raw = next((c for c in cands if c.raw), None)
+        best_fact = next((c for c in cands if not c.raw), None)
+        if top is None or best_raw is None or best_fact is None:
+            return 0.5
+        a, b = content_set(best_raw.fact.text), content_set(best_fact.fact.text)
+        return 1.0 if jaccard(a, b) >= 0.3 else 0.0
 
     @staticmethod
     def _same_story(a: _Cand, b: _Cand) -> bool:
@@ -758,6 +791,24 @@ class AnswerAgent:
         elif out.get("answer"):
             ans.text = str(out["answer"]).strip()
         return ans
+
+
+def load_calibrator(path: Path | None = None) -> dict[str, Any] | None:
+    p = path or (RESULTS_DIR / "calibrator.json")
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) and isinstance(data.get("weights"), dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+FEATURE_NAMES = (
+    "bias", "coverage", "kind_match", "area_match", "receipts", "fact_conf", "margin", "agreement", "missing_key",
+    "type_match", "top_is_raw", "contradicted", "top_support", "top_retrieval", "n_candidates", "n_doc_hits",
+    "top_doc_score", "top_fact_score", "top_rel", "doc_fact_agree", "n_raw_candidates", "area_known", "is_routing",
+    "has_expert", "expert_score", "has_superseded", "n_query_terms", "formula_confidence", "confidence",
+)
+"""Stable names of ``context_features()`` / ``Answer.debug["features"]`` (inputs for a learned calibrator)."""
 
 
 def load_default_agent(*, use_llm: bool | None = None) -> AnswerAgent:

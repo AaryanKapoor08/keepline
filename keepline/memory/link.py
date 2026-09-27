@@ -14,13 +14,14 @@ mistaken for versions of one another.
 from __future__ import annotations
 
 import math
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
 from keepline.contracts import Fact, FactKind, Verification
 from keepline.memory.extract import UPDATE_CUE
-from keepline.retrieval.text import content_set, numbers
+from keepline.retrieval.text import content_set, numbers, stem
 
 # Kinds that describe "how a thing behaves" can supersede each other (a landmine can be restated as a
 # rule/decision); identity-like kinds only supersede within themselves.
@@ -30,6 +31,8 @@ DUP_SIMILARITY = 0.6
 LINK_SIMILARITY = 0.3
 STRONG_SIMILARITY = 0.5
 MIN_TEXT_SIMILARITY = 0.2
+SLOT_TEXT_SIMILARITY = 0.15
+RARE_DF = 12  # a topic word shared by <= this many facts anchors cross-area linking
 CONFLICT_WINDOW_DAYS = 30
 
 
@@ -84,25 +87,70 @@ def is_near_duplicate(old: Fact, new: Fact, sim: _Sim) -> bool:
     return numbers(old.text) == numbers(new.text) and sim.text(old, new) >= DUP_SIMILARITY
 
 
+_WD = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+_NUMW = {w: str(i) for i, w in enumerate("zero one two three four five six seven eight nine ten eleven twelve".split())}
+_NUMW.update({"fifteen": "15", "twenty": "20", "thirty": "30", "forty-five": "45", "sixty": "60", "ninety": "90"})
+_TIME = re.compile(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b|\b(\d{1,2}):(\d{2})\b|\b(\w+) o'?clock\b")
+_QTY = re.compile(r"\b(\d{1,5}|" + "|".join(_NUMW) + r")(st|nd|rd|th)?(?:[\s-]+(?:business |calendar |working )?([a-z]+))?")
+_NOISE = re.compile(r"\b[A-Z][A-Z0-9]*-\d+\b|\S+@\S+|https?://\S+|\b\d{4}-\d{2}-\d{2}\b|\b20\d\d\b")
+
+
+def slots(text: str) -> dict[str, frozenset[str]]:
+    """Typed values in a statement: {'time': {'10'}, 'weekday': {'monday'}, 'ord': {'1','15'}, 'day': {'90'}}.
+
+    Only a change within the *same* slot type counts as a changed value ("due Monday 10am" -> "Friday 4pm";
+    "90 days" -> "60 days"), so "90 days to dispute" never looks like a new version of "15 calendar days".
+    """
+    low = _NOISE.sub(" ", text).lower()
+    out: dict[str, set[str]] = defaultdict(set)
+    for w in _WD:
+        if re.search(rf"\b{w}s?\b", low):
+            out["weekday"].add(w)
+    for m in _TIME.finditer(low):
+        if m.group(6):
+            v = _NUMW.get(m.group(6))
+            if v:
+                out["time"].add(v)
+        elif m.group(4):
+            out["time"].add(m.group(4).lstrip("0") + ("" if m.group(5) == "00" else ":" + m.group(5)))
+        else:
+            out["time"].add(m.group(1).lstrip("0") + ("" if not m.group(2) or m.group(2) == "00" else ":" + m.group(2)))
+    timeless = _TIME.sub(" ", low)
+    for m in _QTY.finditer(timeless):
+        val = _NUMW.get(m.group(1), m.group(1)).lstrip("0") or "0"
+        if m.group(2):
+            out["ord"].add(val)
+        elif m.group(3) and len(m.group(3)) > 2 and m.group(3) not in {"and", "the", "for", "per", "our", "was"}:
+            out[stem(m.group(3))].add(val)
+    return {k: frozenset(v) for k, v in out.items()}
+
+
+def slot_changed(old: Fact, new: Fact) -> bool:
+    so, sn = slots(old.text), slots(new.text)
+    return any(so[k] != sn[k] and not (sn[k] < so[k]) for k in so.keys() & sn.keys())
+
+
 def update_signal(old: Fact, new: Fact, s: float, text_sim: float) -> bool:
     """New statement updates the old one.
 
     A changed value ("the 1st" -> "the 1st and 15th") links at moderate similarity; a bare cue word ("now",
     "also") needs a much closer match, because two different rules about one system often share a cue.
     """
+    n_old, n_new = numbers(old.text), numbers(new.text)
+    if slot_changed(old, new):
+        # a changed slot (time / weekday / ordinal day / count of the same unit) is a new version of the value
+        return text_sim >= SLOT_TEXT_SIMILARITY
+    if n_old and n_new and n_old != n_new:
+        return False  # values differ but in different slots: two different statements
     if text_sim < MIN_TEXT_SIMILARITY:  # sharing only a subject ("CoreLink") is not being the same statement
         return False
-    n_old, n_new = numbers(old.text), numbers(new.text)
-    if n_old and n_new and n_old != n_new and not (n_new < n_old):  # a strict subset is a partial restatement
-        return s >= LINK_SIMILARITY
     if old.kind == new.kind and old.kind not in _BEHAVIOUR:  # "our new rep is ...", "X owns it now"
         return _cue(new) and s >= LINK_SIMILARITY
     return _cue(new) and s >= STRONG_SIMILARITY and not (n_old and not n_new)
 
 
 def disagreement(old: Fact, new: Fact) -> bool:
-    n_old, n_new = numbers(old.text), numbers(new.text)
-    return bool(n_old and n_new) and n_old != n_new
+    return slot_changed(old, new)
 
 
 def merge_into(target: Fact, dup: Fact) -> None:
@@ -131,28 +179,48 @@ def supersede(old: Fact, new: Fact) -> None:
 
 
 def link_facts(facts: Sequence[Fact]) -> LinkResult:
-    """Process facts chronologically; each new fact is merged, supersedes, conflicts with, or joins its area."""
+    """Process facts chronologically; each new fact is merged, supersedes, conflicts with, or is added.
+
+    Candidates are earlier facts in the same area *or* sharing a rare topic word (area linking is noisy:
+    "timesheet cutoff" may land in payroll one day and payments the next). A changed slot value (time,
+    weekday, count) on such a pair is an update even without cue words; when it is, every other current
+    restatement of the old value is closed too.
+    """
     ordered = sorted(facts, key=lambda f: (f.valid_from, f.learned_at or 0, f.id))  # type: ignore[arg-type]
     sim = _Sim(ordered)
+    df = Counter(t for f in ordered for t in sim.terms[f.id])
     by_area: dict[str | None, list[Fact]] = defaultdict(list)
+    by_rare: dict[str, list[Fact]] = defaultdict(list)
     kept: list[Fact] = []
     res = LinkResult(facts=kept)
     for f in ordered:
-        pool = by_area[f.area_id]
-        scored = sorted(((sim(o, f), o) for o in pool if compatible(o.kind, f.kind)),
+        rare = [t for t in sim.terms[f.id] if df[t] <= RARE_DF]
+        pool = {o.id: o for o in by_area[f.area_id]}
+        for t in rare:
+            pool.update((o.id, o) for o in by_rare[t])
+        scored = sorted(((sim(o, f), o) for o in pool.values() if compatible(o.kind, f.kind)),
                         key=lambda x: (-x[0], -int(x[1].is_current), x[1].id))
         dup = next((o for s, o in scored if s >= DUP_SIMILARITY * 0.8 and is_near_duplicate(o, f, sim)), None)
         if dup is not None:
             merge_into(dup, f)  # a stale restatement of a superseded fact stays attached to the old version
             res.merged += 1
             continue
-        cand = next(((s, o) for s, o in scored if o.is_current and s >= LINK_SIMILARITY), None)
-        if cand is not None:
-            s, o = cand
-            if update_signal(o, f, s, sim.text(o, f)) and (o.kind == f.kind or _cue(f)):
-                supersede(o, f)
+        linked = False
+        for s, o in scored:
+            if not o.is_current or s < SLOT_TEXT_SIMILARITY:
+                continue
+            same_area = o.area_id == f.area_id
+            shares_rare = bool(set(rare) & sim.terms[o.id])
+            if not (same_area or shares_rare):
+                continue
+            if update_signal(o, f, s, sim.text(o, f)) and (o.kind == f.kind or _cue(f) or slot_changed(o, f)):
+                if not linked:
+                    supersede(o, f)
+                    linked = True
+                else:  # another current restatement of the same old value
+                    o.valid_to, o.superseded_by = f.valid_from, f.id
                 res.superseded += 1
-            elif disagreement(o, f) and o.stated_by != f.stated_by and (
+            elif not linked and s >= LINK_SIMILARITY and disagreement(o, f) and o.stated_by != f.stated_by and (
                 (f.valid_from - o.valid_from).days <= CONFLICT_WINDOW_DAYS
             ):
                 weaker = o if o.confidence <= f.confidence else f
@@ -161,6 +229,11 @@ def link_facts(facts: Sequence[Fact]) -> LinkResult:
                     {"fact_id_a": o.id, "fact_id_b": f.id, "area_id": f.area_id, "subject": f.subject or o.subject,
                      "note": f"disagree without an update signal; weaker={weaker.id}"}
                 )
-        pool.append(f)
+                break
+            if not linked and s < LINK_SIMILARITY:
+                break
+        by_area[f.area_id].append(f)
+        for t in rare:
+            by_rare[t].append(f)
         kept.append(f)
     return res
