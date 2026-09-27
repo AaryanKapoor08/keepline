@@ -1,0 +1,14 @@
+{
+  "as_of": "2026-09-04",
+  "asker_id": "alex",
+  "questions": [
+    {"id": "d1", "beat": "Current, not stale", "text": "Which days does the nightly reconciliation job skip?"},
+    {"id": "d2", "beat": "Landmine", "text": "Is it safe to rotate the CoreLink API key on a Friday?"},
+    {"id": "d3", "beat": "Vendor contact", "text": "Who is our account manager at CoreLink?"},
+    {"id": "d4", "beat": "Access", "text": "Who can create CoreLink API keys?"},
+    {"id": "d5", "beat": "Procedure", "text": "How does the portal SSL cert get renewed?"},
+    {"id": "d6", "beat": "Where secrets live (never the secret)", "text": "Where is the SFTP key for Bluenose kept?"},
+    {"id": "d7", "beat": "Recurring task", "text": "How often do we run the backup restore test?"},
+    {"id": "d8", "beat": "I don't know, ask Mike", "text": "What is our recovery time objective if the NAS dies?"}
+  ]
+}

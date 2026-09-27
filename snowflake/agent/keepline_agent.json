@@ -1,0 +1,122 @@
+{
+  "name": "KEEPLINE.APP.KEEPLINE_AGENT",
+  "comment": "Keepline: cited answers from company memory, or an honest 'I don't know, ask <person>'.",
+  "profile": {"display_name": "Keepline", "color": "blue"},
+  "docs": [
+    "https://docs.snowflake.com/en/sql-reference/sql/create-agent",
+    "https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-agents"
+  ],
+  "specification": {
+    "models": {"orchestration": "auto"},
+    "orchestration": {
+      "tool_not_accessible": "reject",
+      "budget": {"seconds": 45, "tokens": 16000}
+    },
+    "instructions": {
+      "orchestration": "You answer questions about how Harbourline Credit Union actually works, using only company records. For how/why/when/what questions about systems, procedures, landmines, vendors or access, call current_facts first, then search_receipts for the verbatim source; use fact_history only to explain what a fact replaced. For questions about risk, bus factor, departures or countdowns, use risk_analyst. For 'what if <person> leaves' use risk_map with exclude_person. For a departing person's handoff, call handoff_pack. Always pass the asker's visibility filter provided in the request; never widen it.",
+      "response": "Structure every answer in three labelled layers. SAID: statements quoted from records, each with author, date and source link; if a cited fact was replaced, say 'replaced by' and give the current version. INFERRED: anything you derived by reasoning across records, clearly labelled as inference. NO EVIDENCE: what the records do not say. If no record supports an answer, do not guess: reply 'I don't know from the records' and route the asker to the person with the strongest evidence in that area, e.g. 'I don't know - ask Mike, he closed the last three tickets on this.' Never speak as, imitate or role-play any employee; you report what people wrote, with receipts. Never reveal credentials or secrets, only where they are kept. Give a confidence between 0 and 1 at the end.",
+      "sample_questions": [
+        {"question": "When must the nightly reconciliation job not run?"},
+        {"question": "Is there anything I should never do with the CoreLink API key?"},
+        {"question": "Which areas have bus factor 1?"},
+        {"question": "What happens to our risk if Sarah leaves?"},
+        {"question": "How many days until Tom Bouchard retires?"}
+      ]
+    },
+    "tools": [
+      {
+        "tool_spec": {
+          "type": "cortex_search",
+          "name": "current_facts",
+          "description": "Current (not superseded) facts extracted from Slack, email, tickets, docs and interviews: access, vendor contacts, recurring tasks, landmines, procedures, decisions, owners. Each has a primary receipt doc id."
+        }
+      },
+      {
+        "tool_spec": {
+          "type": "cortex_search",
+          "name": "fact_history",
+          "description": "All facts including superseded ones, with supersedes / superseded_by links. Use to explain what changed and when."
+        }
+      },
+      {
+        "tool_spec": {
+          "type": "cortex_search",
+          "name": "search_receipts",
+          "description": "Source messages, emails, tickets and docs (the receipts). Returns author, timestamp and a deep link for citations."
+        }
+      },
+      {
+        "tool_spec": {
+          "type": "cortex_analyst_text_to_sql",
+          "name": "risk_analyst",
+          "description": "Structured questions about knowledge risk per area, bus factor, what-if scenarios and days until known departures."
+        }
+      },
+      {
+        "tool_spec": {
+          "type": "generic",
+          "name": "risk_map",
+          "description": "Compute the live risk map (risk = importance x (1 - redundancy) x departure likelihood). Pass exclude_person to simulate that person leaving.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "today": {"type": "string", "description": "Date to score as of, YYYY-MM-DD."},
+              "exclude_person": {"type": "string", "description": "Person id to remove for a what-if, or empty string for the baseline."}
+            },
+            "required": ["today", "exclude_person"]
+          }
+        }
+      },
+      {
+        "tool_spec": {
+          "type": "generic",
+          "name": "handoff_pack",
+          "description": "Build the handoff pack for a departing person: access and ownership, vendor contacts, recurring tasks, unresolved work, landmines with receipts, suggested new owners, and gap questions to ask before their last day.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "person_id": {"type": "string", "description": "Keepline person id, e.g. sarah."},
+              "today": {"type": "string", "description": "Date, YYYY-MM-DD."}
+            },
+            "required": ["person_id", "today"]
+          }
+        }
+      }
+    ],
+    "tool_resources": {
+      "current_facts": {
+        "search_service": "KEEPLINE.CORE.FACTS_SEARCH",
+        "max_results": 6,
+        "id_column": "fact_id",
+        "title_column": "kind",
+        "filter": {"@eq": {"is_current": 1}}
+      },
+      "fact_history": {
+        "search_service": "KEEPLINE.CORE.FACTS_SEARCH",
+        "max_results": 6,
+        "id_column": "fact_id",
+        "title_column": "kind"
+      },
+      "search_receipts": {
+        "search_service": "KEEPLINE.CORE.RECEIPTS_SEARCH",
+        "max_results": 8,
+        "id_column": "doc_id",
+        "title_column": "container"
+      },
+      "risk_analyst": {
+        "semantic_view": "KEEPLINE.APP.KEEPLINE_SEMANTIC",
+        "execution_environment": {"type": "warehouse", "warehouse": "KEEPLINE_WH"}
+      },
+      "risk_map": {
+        "type": "procedure",
+        "identifier": "KEEPLINE.APP.RISK_MAP",
+        "execution_environment": {"type": "warehouse", "warehouse": "KEEPLINE_WH"}
+      },
+      "handoff_pack": {
+        "type": "procedure",
+        "identifier": "KEEPLINE.APP.HANDOFF_PACK",
+        "execution_environment": {"type": "warehouse", "warehouse": "KEEPLINE_WH"}
+      }
+    }
+  }
+}

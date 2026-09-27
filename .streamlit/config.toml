@@ -1,0 +1,42 @@
+# Keepline theme (read by `streamlit run app/Home.py` launched from the repo root).
+# Palette: deep navy + teal, one warning red reserved for risk. Fonts fall back to system UI offline.
+
+[theme]
+base = "light"
+primaryColor = "#0E7C7B"
+backgroundColor = "#F5F7FA"
+secondaryBackgroundColor = "#EAF0F4"
+textColor = "#10243A"
+linkColor = "#0E7C7B"
+borderColor = "#D8E0E8"
+showWidgetBorder = true
+baseRadius = "10px"
+buttonRadius = "8px"
+font = "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif"
+headingFont = "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif"
+codeFont = "'JetBrains Mono', Consolas, monospace"
+headingFontWeights = [700, 650, 600, 600, 600, 600]
+baseFontSize = 15
+redColor = "#C8102E"
+greenColor = "#0E7C7B"
+blueColor = "#1F4E79"
+chartCategoricalColors = ["#C27C1E", "#3E6FC4", "#0F9E9A", "#C8102E"]  # validated (dataviz validator, light): plain, keepline, keepline_rl
+chartSequentialColors = ["#EEF2F5", "#E7D9DC", "#E0BFC5", "#D9A5AE", "#D38B97", "#CC7180", "#C85769", "#C83D52", "#C8263D", "#C8102E"]
+showSidebarBorder = false
+
+[theme.sidebar]
+backgroundColor = "#0F2A44"
+secondaryBackgroundColor = "#17385A"
+textColor = "#E6EDF4"
+borderColor = "#2A4A6B"
+primaryColor = "#5CC8C2"
+linkColor = "#5CC8C2"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+runOnSave = false

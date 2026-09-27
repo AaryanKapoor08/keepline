@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="72" viewBox="0 0 360 72">
+  <g fill="none" stroke="#5CC8C2" stroke-width="7" stroke-linecap="round">
+    <path d="M10 36 H44"/><circle cx="54" cy="36" r="10"/><path d="M64 36 H78"/>
+  </g>
+  <text x="92" y="49" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="40" font-weight="800" fill="#FFFFFF" letter-spacing="-1">Keep<tspan fill="#5CC8C2">line</tspan></text>
+</svg>

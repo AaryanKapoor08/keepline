@@ -1,0 +1,194 @@
+# Keepline semantic model for Cortex Analyst (semantic view YAML spec).
+# Lets managers ask structured questions in plain English: "which areas have bus factor 1?",
+# "how many days until Sarah's last day?", "what is the risk of payroll if Tom leaves?".
+#
+# Spec: https://docs.snowflake.com/en/user-guide/views-semantic/semantic-view-yaml-spec
+# Deployed by snowflake/deploy.py via SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('KEEPLINE.APP', <this file>),
+# and also uploaded to @KEEPLINE.APP.SEMANTIC_MODELS for tools that take a semantic_model_file.
+#
+# Privacy: only topic-level tables are modelled (risk per area, known HR departure dates).
+# Per-person activity (CORE.EXPERTISE, CORE.QUERY_LOG) is deliberately NOT exposed here.
+
+name: KEEPLINE_SEMANTIC
+description: >-
+  Knowledge-continuity risk for Harbourline Credit Union. Each row of area_risk is one knowledge area
+  (system / responsibility) on one snapshot date, optionally under a what-if scenario that removes one
+  person. risk = importance x (1 - redundancy) x departure_likelihood. Bus factor = number of people
+  with strong evidence of knowing the area.
+
+tables:
+  - name: area_risk
+    description: >-
+      Daily risk-map snapshot per knowledge area. Baseline rows have excluded_person_id NULL; what-if rows
+      name the person whose departure is simulated. Use the latest snapshot_date unless a date is asked for.
+    base_table:
+      database: KEEPLINE
+      schema: APP
+      table: AREA_RISK_SNAPSHOT
+    dimensions:
+      - name: area_id
+        synonyms: ["area", "system", "topic", "knowledge area"]
+        description: Slug of the knowledge area, e.g. reconciliation, payroll, core_banking.
+        expr: area_id
+        data_type: VARCHAR
+      - name: area_name
+        synonyms: ["area name", "system name"]
+        description: Human-readable area name.
+        expr: area_name
+        data_type: VARCHAR
+      - name: at_risk_person_id
+        synonyms: ["key person", "single point of failure", "expert at risk"]
+        description: The strong expert whose likely departure drives this area's risk.
+        expr: at_risk_person_id
+        data_type: VARCHAR
+      - name: excluded_person_id
+        synonyms: ["what-if person", "scenario", "removed person"]
+        description: NULL for the baseline; otherwise the person removed in a what-if scenario.
+        expr: excluded_person_id
+        data_type: VARCHAR
+      - name: explanation
+        description: Plain-language reason for the score with evidence counts.
+        expr: explanation
+        data_type: VARCHAR
+    time_dimensions:
+      - name: snapshot_date
+        synonyms: ["as of", "date", "snapshot"]
+        description: Date the risk map was computed for.
+        expr: snapshot_date
+        data_type: DATE
+    facts:
+      - name: risk
+        synonyms: ["risk score", "knowledge risk"]
+        description: 0..1 knowledge-loss risk = importance x (1 - redundancy) x departure_likelihood.
+        expr: risk
+        data_type: FLOAT
+      - name: importance
+        description: 0..1 criticality prior + incidents + decisions + landmines + dependencies + ask frequency.
+        expr: importance
+        data_type: FLOAT
+      - name: redundancy
+        description: 0..1 saturating function of how many people know the area well.
+        expr: redundancy
+        data_type: FLOAT
+      - name: departure_likelihood
+        description: 0..1 likelihood the key expert leaves soon (1.0 when a departure date is within 30 days).
+        expr: departure_likelihood
+        data_type: FLOAT
+      - name: bus_factor
+        synonyms: ["number of experts", "people who know it", "truck factor"]
+        description: Number of people with strong evidence of knowing the area.
+        expr: bus_factor
+        data_type: NUMBER
+      - name: countdown_days
+        synonyms: ["days left", "days until departure"]
+        description: Days until the at-risk expert's known last day.
+        expr: countdown_days
+        data_type: NUMBER
+      - name: n_landmines
+        synonyms: ["landmines", "gotchas"]
+        description: Current landmine facts on record for the area.
+        expr: n_landmines
+        data_type: NUMBER
+    metrics:
+      - name: areas_with_bus_factor_one
+        synonyms: ["single-expert areas", "bus factor 1 count"]
+        description: Number of areas known well by at most one person.
+        expr: COUNT_IF(bus_factor <= 1)
+      - name: average_risk
+        description: Mean risk across areas.
+        expr: AVG(risk)
+      - name: max_risk
+        description: Highest area risk.
+        expr: MAX(risk)
+    filters:
+      - name: baseline_only
+        synonyms: ["current situation", "no scenario"]
+        description: Baseline risk map (no what-if person removed).
+        expr: excluded_person_id IS NULL
+
+  - name: departures
+    description: Known departures from the HR roster, with a countdown to the last day.
+    base_table:
+      database: KEEPLINE
+      schema: APP
+      table: PEOPLE_DEPARTURES
+    primary_key:
+      columns: [person_id]
+    dimensions:
+      - name: person_id
+        synonyms: ["person", "employee id"]
+        expr: person_id
+        data_type: VARCHAR
+      - name: name
+        synonyms: ["employee", "who"]
+        expr: name
+        data_type: VARCHAR
+        sample_values: ["Sarah Chen", "Tom Bouchard"]
+      - name: role
+        expr: role
+        data_type: VARCHAR
+      - name: team
+        expr: team
+        data_type: VARCHAR
+      - name: departure_type
+        synonyms: ["reason for leaving"]
+        description: resignation | retirement | leave | contract_end
+        expr: departure_type
+        data_type: VARCHAR
+        is_enum: true
+        sample_values: ["resignation", "retirement", "leave", "contract_end"]
+    time_dimensions:
+      - name: departure_date
+        synonyms: ["last day", "leaving date"]
+        expr: departure_date
+        data_type: DATE
+    facts:
+      - name: days_until_departure
+        synonyms: ["days left", "countdown", "days until last day"]
+        description: Days from the Keepline clock (APP.KEEPLINE_TODAY) to the last day; negative if already gone.
+        expr: days_until_departure
+        data_type: NUMBER
+
+relationships:
+  - name: area_risk_to_departing_expert
+    left_table: area_risk
+    right_table: departures
+    relationship_columns:
+      - left_column: at_risk_person_id
+        right_column: person_id
+
+verified_queries:
+  - name: bus_factor_one_areas
+    question: Which areas have bus factor 1?
+    use_as_onboarding_question: true
+    sql: |
+      SELECT area_name, at_risk_person_id, risk, countdown_days
+      FROM __area_risk
+      WHERE excluded_person_id IS NULL
+        AND bus_factor <= 1
+        AND snapshot_date = (SELECT MAX(snapshot_date) FROM __area_risk)
+      ORDER BY risk DESC
+  - name: days_until_departure
+    question: How many days until each departing person's last day?
+    use_as_onboarding_question: true
+    sql: |
+      SELECT name, role, departure_type, departure_date, days_until_departure
+      FROM __departures
+      WHERE days_until_departure >= 0
+      ORDER BY days_until_departure
+  - name: what_if_sarah_leaves
+    question: What happens to our risk if Sarah leaves?
+    sql: |
+      SELECT b.area_name, b.risk AS risk_today, w.risk AS risk_without_sarah, w.bus_factor AS bus_factor_without_sarah
+      FROM __area_risk b
+      JOIN __area_risk w
+        ON w.area_id = b.area_id AND w.snapshot_date = b.snapshot_date AND w.excluded_person_id = 'sarah'
+      WHERE b.excluded_person_id IS NULL
+        AND b.snapshot_date = (SELECT MAX(snapshot_date) FROM __area_risk)
+      ORDER BY w.risk - b.risk DESC
+
+module_custom_instructions:
+  sql_generation: >-
+    Default to the latest snapshot_date and baseline rows (excluded_person_id IS NULL) unless the user asks
+    about a date or a what-if. Report risk as a percentage with no decimals. Never compute per-person
+    activity or performance metrics; this model is about topics and known HR dates only.
