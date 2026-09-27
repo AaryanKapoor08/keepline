@@ -2,10 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 
-export const API = process.env.NEXT_PUBLIC_KEEPLINE_API ?? "http://localhost:8000";
+const API_ENV = process.env.NEXT_PUBLIC_KEEPLINE_API ?? "http://localhost:8000";
+/** "off" = static snapshot only (hosted deploy: never probe localhost). */
+export const API = API_ENV === "off" ? "" : API_ENV;
 export const TODAY = "2026-09-04";
 
-let apiDown: boolean | null = null;
+let apiDown: boolean | null = API ? null : true;
 
 async function withTimeout(p: Promise<Response>, ms: number): Promise<Response> {
   return Promise.race([p, new Promise<Response>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms))]);

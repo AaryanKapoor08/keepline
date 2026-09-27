@@ -14,7 +14,7 @@ const ASKERS = ["alex", "dave", "aisha"];
 type Turn = { q: string; a: any | null; offline?: boolean };
 
 async function askChat(messages: { role: string; content: string }[], asker: string): Promise<{ a: any; offline: boolean }> {
-  try {
+  if (API) try {
     const r = await Promise.race([
       fetch(API + "/chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages, asker_id: asker }) }),
       new Promise<Response>((_, rej) => setTimeout(() => rej(new Error("timeout")), 20000)),
