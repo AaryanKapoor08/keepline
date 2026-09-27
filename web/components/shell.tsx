@@ -8,8 +8,8 @@ import { cn } from "./ui";
 export const ROUTES = [
   { href: "/", label: "Home" },
   { href: "/graph", label: "Knowledge" },
+  { href: "/review", label: "Review" },
   { href: "/history", label: "History" },
-  { href: "/simulate", label: "Simulate" },
   { href: "/lab", label: "Proof" },
   { href: "/close", label: "Snowflake" },
 ];

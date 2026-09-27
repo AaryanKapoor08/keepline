@@ -57,7 +57,7 @@ export default function Home() {
           </div>
         </Card>
 
-        <Card title="Most at risk" right={<Details href="/simulate">Simulate</Details>}>
+        <Card title="Most at risk" right={<Details href="/graph?simulate=corelink_v3">Simulate</Details>}>
           {top.map((r) => (
             <div key={r.area_id} className="flex items-center justify-between border-b border-[#ececec] py-3 last:border-0">
               <div>

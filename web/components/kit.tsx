@@ -8,7 +8,7 @@ import { cn } from "./ui";
 
 export const EASE = [0.25, 0.1, 0.25, 1] as const;
 
-export function PageTop({ title, action, onAction, actionHref, sub }: { title: React.ReactNode; action?: React.ReactNode; onAction?: () => void; actionHref?: string; sub?: React.ReactNode }) {
+export function PageTop({ title, action, onAction, actionHref, sub, chips, right, secondary }: { title: React.ReactNode; action?: React.ReactNode; onAction?: () => void; actionHref?: string; sub?: React.ReactNode; chips?: React.ReactNode; right?: React.ReactNode; secondary?: { label: React.ReactNode; onClick: () => void } }) {
   return (
     <div className="mb-6">
       <div className="flex items-end justify-between gap-6">
@@ -18,25 +18,32 @@ export function PageTop({ title, action, onAction, actionHref, sub }: { title: R
           </motion.h1>
           {sub && <p className="mt-2 text-[17px] text-muted">{sub}</p>}
         </div>
+        <div className="flex gap-2">
+        {secondary && <button onClick={secondary.onClick} className="btn-primary">{secondary.label}</button>}
         {action &&
           (actionHref ? (
             <a href={actionHref} className="btn-primary">{action}</a>
           ) : (
             <button onClick={onAction} className="btn-primary">{action}</button>
           ))}
+        </div>
       </div>
       <div className="mt-6 flex items-center justify-between">
         <div className="flex gap-2">
-          <Chip icon={Building2}>Harbourline Credit Union</Chip>
-          <Chip icon={CalendarDays}>As of Sep 4, 2026</Chip>
-          <Chip icon={Download}>Export</Chip>
+          {chips ?? (
+            <>
+              <Chip icon={Building2}>Harbourline Credit Union</Chip>
+              <Chip icon={CalendarDays}>As of Sep 4, 2026</Chip>
+              <Chip icon={Download}>Export</Chip>
+            </>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        {right ?? <div className="flex items-center gap-2">
           <div className="flex h-11 w-[300px] items-center gap-2 rounded-full bg-white px-4 text-[14px] text-dim">
             <Search className="h-4 w-4" strokeWidth={1.6} /> Search knowledge
           </div>
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white"><MoreVertical className="h-4 w-4" strokeWidth={1.6} /></span>
-        </div>
+        </div>}
       </div>
     </div>
   );

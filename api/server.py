@@ -541,6 +541,49 @@ def get_latest_commits(n: int = 3) -> list[dict[str, Any]]:
     return cs[:n]
 
 
+_STOP = set("the a an of to and or is it in on for must not don't dont do please be any with that this you your i we our at by as are was if so".split())
+
+
+def _toks(t: str) -> set[str]:
+    t = t.lower().replace("minutes", "min").replace("-", " ")
+    out = set()
+    for w in re.findall(r"[a-z0-9']+", t):
+        w = re.sub(r"\d+$", "", w) if re.match(r"[a-z]+\d+$", w) else w
+        w = w[:-1] if len(w) > 3 and w.endswith("s") else w
+        if w and w not in _STOP:
+            out.add(w)
+    return out
+
+
+def _tidy_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Don'ts = real landmines only; near-duplicates in the same area collapse into one item with several receipts."""
+    s = store()
+    out: list[dict[str, Any]] = []
+    for it in items:
+        if it["section"] == "landmines":
+            f = s.fact(it["fact_ids"][0]) if it.get("fact_ids") else None
+            title = it["title"].lower()
+            if (f and f.kind == FactKind.ACCESS) or re.search(r"1password|vault", title):
+                it = {**it, "section": "access"}
+            elif (f and f.kind != FactKind.LANDMINE) or title.startswith(("don't forget", "dont forget", "remember")):
+                it = {**it, "section": "procedures"}
+        dup = None
+        if it["section"] == "landmines":
+            ta = _toks(it["title"])
+            for o in out:
+                if o["section"] == "landmines" and o.get("area_id") == it.get("area_id"):
+                    tb = _toks(o["title"])
+                    if ta and tb and len(ta & tb) / min(len(ta), len(tb)) >= 0.5:
+                        dup = o
+                        break
+        if dup:
+            dup["citations"] = dup.get("citations", []) + it.get("citations", [])
+            dup["n_receipts"] = len(dup["citations"])
+        else:
+            out.append({**it, "n_receipts": len(it.get("citations", []))})
+    return out
+
+
 def get_person_sheet(pid: str) -> dict[str, Any]:
     s = store()
     p = s.person(pid)
@@ -559,6 +602,7 @@ def get_person_sheet(pid: str) -> dict[str, Any]:
             others[a["area_id"]] = [{"person_id": e[0], "name": (_p(e[0]) or {}).get("name"), "strong": i < r.bus_factor}
                                     for i, e in enumerate(r.experts) if e[0] != pid][:3]
     facts = s.facts(person_id=pid)
+    pack["items"] = _tidy_items(pack.get("items", []))
     return {
         "person": to_dict(p), "profile": prof, "pack": pack, "others": others, "owner_of": owner_of,
         "open_reviews": 1 if any(str(f.review_status) == "pending" for f in _said(facts)) else 0,
@@ -622,3 +666,57 @@ def sim_templates() -> list[dict[str, Any]]:
 @app.post("/project_sim")
 def project_sim(body: SimIn) -> dict[str, Any]:
     return do_project_sim(body.template_id, body.brief, body.weeks, body.leaves)
+
+
+# ----------------------------------------------------------------------------------------------- review queue (PR per item)
+_KIND_RANK = {FactKind.LANDMINE: 0, FactKind.ACCESS: 1, FactKind.VENDOR_CONTACT: 2, FactKind.RECURRING_TASK: 3}
+
+
+def get_review_queue(pid: str, per_source: int = 12) -> dict[str, Any]:
+    from keepline.contracts import Visibility
+
+    s = store()
+    groups: dict[str, list[dict[str, Any]]] = {"slack": [], "email": [], "ticket": []}
+    facts = sorted((f for f in _said(s.facts(person_id=pid)) if str(f.review_status) == "pending" and f.kind in _KIND_RANK),
+                   key=lambda f: (_KIND_RANK[f.kind], -f.confidence))
+    seen_docs: set[str] = set()
+    for f in facts:
+        d = s.doc(f.source_doc_ids[0]) if f.source_doc_ids else None
+        if not d or d.visibility == Visibility.PRIVATE or d.id in seen_docs:
+            continue
+        st = str(d.source_type)
+        if st not in groups or len(groups[st]) >= per_source:
+            continue
+        seen_docs.add(d.id)
+        text = d.text
+        if st == "ticket":
+            text = f.quote or text
+        groups[st].append({
+            "fact_id": f.id, "sha": _sha(f.id), "fact": f.text, "kind": str(f.kind), "quote": f.quote, "area_id": f.area_id,
+            "source": {
+                "type": st, "doc_id": d.id, "container": d.container, "title": d.title, "author": d.author_id,
+                "author_name": (_p(d.author_id) or {}).get("name"), "timestamp": d.timestamp.isoformat(), "text": text[:600],
+                "to": [(_p(x) or {}).get("name", x) for x in d.participants if x != d.author_id][:4] if st == "email" else [],
+                "status": d.meta.get("status"), "url": d.url, "visibility": str(d.visibility),
+            },
+        })
+    total = sum(1 for f in _said(s.facts(person_id=pid)) if str(f.review_status) == "pending")
+    return {"person_id": pid, "name": (_p(pid) or {}).get("name"), "groups": groups, "n_pending": total,
+            "issues": get_profile(pid).get("gaps", [])}
+
+
+class ReviewIn(BaseModel):
+    status: str
+    corrected_text: str | None = None
+
+
+@app.get("/review_queue/{pid}")
+def review_queue(pid: str) -> dict[str, Any]:
+    return get_review_queue(pid)
+
+
+@app.post("/review_item/{fact_id}")
+def review_item(fact_id: str, body: ReviewIn) -> dict[str, Any]:
+    """Persisted review decision. The demo UI keeps decisions client-side so rehearsals never mutate the DB."""
+    store().set_review_status(fact_id, ReviewStatus(body.status), body.corrected_text)
+    return {"ok": True, "fact_id": fact_id, "status": body.status, "sha": _sha(fact_id + (body.corrected_text or ""))}

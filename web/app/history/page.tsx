@@ -63,7 +63,7 @@ export default function HistoryPage() {
 
   return (
     <>
-      <PageTop title="Every fact has a history." action={prOpen ? "Hide reviews" : "Open reviews"} onAction={() => setPrOpen(!prOpen)} />
+      <PageTop title="Every fact has a history." action="Open review queue" actionHref="/review" />
       <div className="mb-4 flex items-center justify-between">
         <div className="flex gap-2">
           {AREAS.map(([id, l]) => (

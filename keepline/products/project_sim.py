@@ -17,7 +17,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from keepline.contracts import FactKind
-from keepline.products._common import StoreLike, _safe, is_strong, people_by_id
+from keepline.products._common import StoreLike, _safe, is_strong, looks_like_fact, people_by_id
 from keepline.products.simulate import areas_in_brief
 
 TEMPLATES: list[dict[str, Any]] = [
@@ -25,12 +25,14 @@ TEMPLATES: list[dict[str, Any]] = [
         "id": "corelink_v3",
         "name": "Upgrade CoreLink API to v3",
         "weeks": 12,
+        "label": "Upgrade the CoreLink API to v3 next month",
         "brief": "Upgrade the CoreLink API integration to v3: new API keys, updated nightly reconciliation, "
                  "and ACH settlement files re-tested before cutover.",
     },
     {
         "id": "mobile_app",
         "name": "Launch new mobile banking app",
+        "label": "Launch a new mobile banking app",
         "weeks": 16,
         "brief": "Launch a new mobile banking app on top of the member portal and online banking: SSL certificates "
                  "and DNS for the new domain, Okta identity and access, and debit card controls.",
@@ -38,6 +40,7 @@ TEMPLATES: list[dict[str, Any]] = [
     {
         "id": "fintrac",
         "name": "FINTRAC reporting overhaul",
+        "label": "Overhaul FINTRAC reporting",
         "weeks": 16,
         "brief": "Overhaul FINTRAC reporting and AML monitoring, including large cash transaction reports fed from "
                  "ACH payments and the nightly reconciliation.",
@@ -67,6 +70,7 @@ class _Area:
     landmines: int
     recurring: int
     documented: float  # 0..1, how much of the area is captured in memory
+    rules: list[dict[str, Any]]  # the area's "never do X" rules, with receipts
 
 
 def _weeks_until(d: date | None, start: date) -> int | None:
@@ -95,7 +99,10 @@ def _areas(store: StoreLike, area_ids: list[str]) -> list[_Area]:
         out.append(_Area(aid, a.name if a else aid, holders, cands,
                          sum(1 for f in facts if f.kind == FactKind.LANDMINE),
                          sum(1 for f in facts if f.kind == FactKind.RECURRING_TASK),
-                         min(1.0, len(facts) / DOC_FACTS_FULL)))
+                         min(1.0, len(facts) / DOC_FACTS_FULL),
+                         [{"text": f.text, "quote": f.quote, "stated_by": f.stated_by, "date": f.valid_from.isoformat(),
+                           "doc_id": f.source_doc_ids[0] if f.source_doc_ids else None}
+                          for f in facts if f.kind == FactKind.LANDMINE and looks_like_fact(f.text)][:6]))
     return out
 
 
@@ -268,7 +275,8 @@ def simulate_project(store: StoreLike, brief: str, today: date, *, weeks: int = 
     return {
         "brief": brief, "today": today.isoformat(), "start": start.isoformat(), "end": end.isoformat(), "weeks": weeks,
         "areas": [{"area_id": a.id, "area_name": a.name, "holders": a.holders, "matched": touched[a.id],
-                   "documented": round(a.documented, 2)} for a in areas],
+                   "documented": round(a.documented, 2), "rules": a.rules} for a in areas],
+        "dependents": sorted({h for a in areas for h in a.holders}),
         "timeline": timeline, "options": options, "recommended": best["id"], "runs": runs, "seed": seed,
         "assumptions": {
             "unplanned_absence_per_month": UNPLANNED_ABSENCE_PER_MONTH, "transfer_weeks": TRANSFER_WEEKS,

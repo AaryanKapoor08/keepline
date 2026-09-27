@@ -56,6 +56,7 @@ def main() -> None:
     for p in S.store().people():
         dump(f"person_{p.id}", lambda p=p: S.get_person_sheet(p.id))
     dump("review_sarah", lambda: S.get_review("sarah"))
+    dump("review_queue_sarah", lambda: S.get_review_queue("sarah"))
     from keepline.products.project_sim import TEMPLATES
 
     dump("sim_templates", lambda: TEMPLATES)

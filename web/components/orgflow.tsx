@@ -19,7 +19,7 @@ const fmt = (d?: string | null) => (d ? new Date(d + "T12:00:00").toLocaleDateSt
 function TeamNode({ data }: NodeProps) {
   const d = data as any;
   return (
-    <div className={cn("h-full w-full rounded-[20px] bg-[#f4f5f7] transition-opacity", d.dim && "opacity-40")}>
+    <div className={cn("h-full w-full rounded-[20px] bg-[#f4f5f7] transition-opacity duration-500", d.dim && "opacity-40")}>
       <div className="px-4 pt-2.5 text-[13px] font-medium text-muted">{d.label}</div>
     </div>
   );
@@ -29,13 +29,13 @@ function PersonNode({ data }: NodeProps) {
   const d = data as any;
   const ini = String(d.name).split(" ").map((x: string) => x[0]).join("").slice(0, 2);
   return (
-    <div className={cn("flex h-[62px] w-[230px] cursor-pointer items-center gap-3 rounded-[16px] border bg-white px-3 transition-all", d.selected ? "border-[#111] shadow-[0_0_0_3px_rgba(17,17,17,0.08)]" : "border-[#e5e5ea] hover:border-[#b0b0b8]", d.dim && "opacity-35")}>
+    <div className={cn("flex h-[62px] w-[230px] cursor-pointer items-center gap-3 rounded-[16px] border bg-white px-3 transition-all", d.selected ? "border-[#111] shadow-[0_0_0_3px_rgba(17,17,17,0.08)]" : d.tag ? "border-alarm" : "border-[#e5e5ea] hover:border-[#b0b0b8]", d.dim && "opacity-20")}>
       <Handle type="source" position={d.side === "L" ? Position.Right : Position.Left} className="!h-2 !w-2 !border-2 !border-[#b0b0b8] !bg-white" />
       <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-medium", d.leaving ? "bg-[#111] text-white" : "bg-[#f4f5f7] text-fg")}>{ini}</span>
       <div className="min-w-0">
         <div className="truncate text-[14px] font-medium leading-tight">{d.name}</div>
         <div className="truncate text-[12px] leading-tight text-muted">{d.role}</div>
-        {d.leaving && <div className="text-[11.5px] font-medium leading-tight text-alarm">leaves {fmt(d.leaving)}</div>}
+        {d.tag ? <div className="text-[11.5px] font-medium leading-tight text-alarm">{d.tag}</div> : d.leaving && <div className="text-[11.5px] font-medium leading-tight text-alarm">leaves {fmt(d.leaving)}</div>}
         {d.joining && <div className="text-[11.5px] font-medium leading-tight text-fg">joins {fmt(d.joining)}</div>}
       </div>
     </div>
@@ -45,7 +45,8 @@ function PersonNode({ data }: NodeProps) {
 function AreaNode({ data }: NodeProps) {
   const d = data as any;
   return (
-    <div className={cn("flex h-[48px] w-[210px] items-center gap-2.5 rounded-[14px] border-2 bg-white px-3 transition-opacity", d.bf1 ? "border-alarm" : "border-[#d9d9de]", d.dim && "opacity-35")}>
+    <div className={cn("relative flex h-[48px] w-[210px] cursor-pointer items-center gap-2.5 rounded-[14px] border-2 bg-white px-3 transition-opacity duration-500", d.bf1 ? "border-alarm" : "border-[#d9d9de]", d.lit && "shadow-[0_0_0_4px_rgba(17,17,17,0.07)]", d.dim && "opacity-20")}>
+      {d.rules ? <span className="absolute -right-3 -top-3 rounded-full bg-alarm px-2 py-0.5 text-[11px] font-medium text-white">{d.rules} rules</span> : null}
       <Handle id="l" type="target" position={Position.Left} className="!h-2 !w-2 !border-2 !border-[#b0b0b8] !bg-white" />
       <Database className={cn("h-4 w-4 shrink-0", d.bf1 ? "text-alarm" : "text-fg")} strokeWidth={1.6} />
       <div className="min-w-0">
@@ -63,7 +64,9 @@ const SHORT: Record<string, string> = {
   identity_access: "Identity & access", backups_dr: "Backups & DR", fintrac_reporting: "FINTRAC & AML", payroll: "Payroll", card_processing: "Card processing",
 };
 
-export default function OrgFlow({ people, risk, selected, focusTeam, onPerson }: { people: any[]; risk: any[]; selected?: string | null; focusTeam?: string | null; onPerson: (id: string) => void }) {
+export type SimOverlay = { areas: string[]; people: string[]; tags: Record<string, string>; rules: Record<string, number>; pairs: { p: string; a: string; label: string }[] };
+
+export default function OrgFlow({ people, risk, selected, focusTeam, onPerson, sim, onArea, height = 560 }: { people: any[]; risk: any[]; selected?: string | null; focusTeam?: string | null; onPerson: (id: string) => void; sim?: SimOverlay | null; onArea?: (id: string) => void; height?: number }) {
   const nodes: Node[] = [];
   const pos: Record<string, { x: number; y: number; side: "L" | "R" }> = {};
   const colY = { L: 0, R: 0 };
@@ -78,7 +81,7 @@ export default function OrgFlow({ people, risk, selected, focusTeam, onPerson }:
       const y = HEAD + i * (PH + 10);
       nodes.push({
         id: p.id, type: "person", parentId: gid, extent: "parent", position: { x: PAD, y }, draggable: false,
-        data: { name: p.name, role: p.role, side: t.side, leaving: p.departure_date, joining: p.start_date > "2026-09-04" ? p.start_date : null, selected: selected === p.id, dim: focusTeam && focusTeam !== t.id },
+        data: { name: p.name, role: p.role, side: t.side, leaving: p.departure_date, joining: p.start_date > "2026-09-04" ? p.start_date : null, selected: selected === p.id, dim: sim ? !sim.people.includes(p.id) : focusTeam && focusTeam !== t.id, tag: sim?.tags[p.id] },
       });
       pos[p.id] = { x: colX[t.side] + PAD, y: colY[t.side] + y + PH / 2, side: t.side };
     });
@@ -97,19 +100,28 @@ export default function OrgFlow({ people, risk, selected, focusTeam, onPerson }:
   const total = Math.max(colY.L, colY.R) - GAP;
   const step = total / areas.length;
   areas.forEach((r, i) => {
-    nodes.push({ id: `a:${r.area_id}`, type: "area", position: { x: PW + 2 * PAD + 180, y: i * step + (step - 48) / 2 }, draggable: false, data: { label: SHORT[r.area_id] ?? r.area_name, bf1: r.bus_factor <= 1, bf: r.bus_factor, dim: focusTeam && !focusAreas.has(r.area_id) } });
+    nodes.push({ id: `a:${r.area_id}`, type: "area", position: { x: PW + 2 * PAD + 180, y: i * step + (step - 48) / 2 }, draggable: false, data: { label: SHORT[r.area_id] ?? r.area_name, bf1: r.bus_factor <= 1, bf: r.bus_factor, dim: sim ? !sim.areas.includes(r.area_id) : focusTeam && !focusAreas.has(r.area_id), lit: sim?.areas.includes(r.area_id), rules: sim?.rules[r.area_id] } });
   });
   const edges: Edge[] = strong.map((s, i) => {
     const on = selected === s.p;
-    const dim = focusTeam && people.find((p) => p.id === s.p)?.team !== focusTeam;
+    const dim = sim ? !(sim.areas.includes(s.a) && sim.people.includes(s.p)) : focusTeam && people.find((p) => p.id === s.p)?.team !== focusTeam;
     return {
       id: `e${i}`, source: s.p, target: `a:${s.a}`, targetHandle: pos[s.p].side === "L" ? "l" : "r", type: "default",
-      style: { stroke: on ? "#111" : "#c7c7cc", strokeWidth: on ? 2 : 1.4, opacity: dim ? 0.25 : 1 },
+      style: { stroke: on || (sim && !dim) ? "#111" : "#c7c7cc", strokeWidth: on || (sim && !dim) ? 2 : 1.4, opacity: dim ? 0.15 : 1, transition: "opacity .6s" },
       markerEnd: { type: MarkerType.ArrowClosed, color: on ? "#111" : "#c7c7cc", width: 14, height: 14 },
     };
   });
+  for (const [i, pr] of (sim?.pairs ?? []).entries()) {
+    if (!pos[pr.p]) continue;
+    edges.push({
+      id: `pair${i}`, source: pr.p, target: `a:${pr.a}`, targetHandle: pos[pr.p].side === "L" ? "l" : "r", type: "default", label: pr.label,
+      style: { stroke: "#111", strokeWidth: 1.8, strokeDasharray: "6 5" }, animated: true,
+      labelStyle: { fontSize: 12, fill: "#111", fontWeight: 500 }, labelBgStyle: { fill: "#ffffff" }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
+      markerEnd: { type: MarkerType.ArrowClosed, color: "#111", width: 14, height: 14 },
+    });
+  }
   return (
-    <div className="h-[560px] overflow-hidden rounded-[18px] bg-[#fafafa]">
+    <div style={{ height }} className="overflow-hidden rounded-[18px] bg-[#fafafa]">
       <ReactFlow
         key={focusTeam ?? "all"}
         nodes={nodes}
@@ -121,7 +133,7 @@ export default function OrgFlow({ people, risk, selected, focusTeam, onPerson }:
         maxZoom={1.6}
         proOptions={{ hideAttribution: true }}
         nodesConnectable={false}
-        onNodeClick={(_, n) => n.type === "person" && onPerson(n.id)}
+        onNodeClick={(_, n) => (n.type === "person" ? onPerson(n.id) : n.type === "area" ? onArea?.(n.id.slice(2)) : null)}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1.2} color="#d4d4d8" />
         <Controls position="bottom-left" showInteractive={false} />
