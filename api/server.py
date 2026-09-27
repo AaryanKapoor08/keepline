@@ -725,26 +725,30 @@ def review_item(fact_id: str, body: ReviewIn) -> dict[str, Any]:
 # ----------------------------------------------------------------------------------------------- chat ("Ask Keepline")
 CHAT_DEMO: list[str] = [
     "What should I know before touching reconciliation?",
+    "What's the Bedford branch wifi password?",
+    "Can I rotate the CoreLink API key this Friday?",
     "Who can cover CoreLink when Sarah leaves?",
     "What breaks if Tom leaves?",
-    "Can I rotate the CoreLink API key this Friday?",
     "How has the reconciliation schedule changed?",
-    "What's the office wifi password?",
 ]
 
 
 @lru_cache(maxsize=1)
 def chat_agent():
-    """Offline, deterministic tool router by default (demo-safe); set KEEPLINE_CHAT_LLM=1 for the Claude tool loop."""
+    """Claude tool loop when available (disk-cached, so demo questions replay offline); falls back to the offline
+    router on any failure. KEEPLINE_CHAT_LLM=0 forces the offline router."""
     import os
 
     from keepline.agent.chat import load_default_chat_agent
 
-    return load_default_chat_agent(use_llm=True if os.environ.get("KEEPLINE_CHAT_LLM") == "1" else False)
+    return load_default_chat_agent(use_llm=False if os.environ.get("KEEPLINE_CHAT_LLM") == "0" else None)
+
+
+CHAT_AS_OF = date(2026, 9, 15)  # Alex's first week; the demo questions are cached for this date
 
 
 def do_chat(messages: list[dict[str, str]], asker_id: str = "alex", as_of: str | None = None) -> dict[str, Any]:
-    t = date.fromisoformat(as_of) if as_of else TODAY
+    t = date.fromisoformat(as_of) if as_of else CHAT_AS_OF
     out = chat_agent().reply(messages, asker_id=asker_id, as_of=t)
     out["route_people"] = [_p(x) for x in out.get("route_to", [])]
     return json.loads(to_json(out))

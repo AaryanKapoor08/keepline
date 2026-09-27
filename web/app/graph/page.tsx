@@ -154,6 +154,9 @@ function PersonSheet({ pid, onClose }: { pid: string; onClose: () => void }) {
               })}
             </Section>
             {p.departure_date && <AskBox pid={pid} />}
+            <button onClick={() => window.dispatchEvent(new CustomEvent("keepline-ask", { detail: { prefill: `What should I know about ${p.name}'s areas?` } }))} className="w-full rounded-[20px] bg-white p-4 text-left text-[14px] text-[var(--sig)]">
+              Ask Keepline about {p.name.split(" ")[0]}&apos;s areas ›
+            </button>
           </div>
         )}
       </motion.div>

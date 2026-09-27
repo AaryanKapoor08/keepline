@@ -159,6 +159,7 @@ def merge_into(target: Fact, dup: Fact) -> None:
         if d not in target.source_doc_ids:
             target.source_doc_ids.append(d)
     target.confidence = round(min(0.97, 1 - (1 - target.confidence) * (1 - 0.5 * dup.confidence)), 3)
+    target.valid_from = min(target.valid_from, dup.valid_from)  # a fact dates from its earliest receipt
     if target.area_id is None:
         target.area_id = dup.area_id
     if target.subject is None:
@@ -204,6 +205,25 @@ def link_facts(facts: Sequence[Fact]) -> LinkResult:
         if dup is not None:
             merge_into(dup, f)  # a stale restatement of a superseded fact stays attached to the old version
             res.merged += 1
+            continue
+        # A restatement of a value already current in an earlier fact ("now skips the 1st AND the 15th" after the
+        # May rule said the same) is another receipt for that fact, so versions date from the EARLIEST statement.
+        sf = slots(f.text)
+        n_vals = sum(len(v) for v in sf.values())
+        twin = next((g for _s, g in scored if sf and g.is_current and slots(g.text) == sf
+                     and (sim.text(g, f) >= SLOT_TEXT_SIMILARITY
+                          or (n_vals >= 2 and g.area_id == f.area_id and compatible(g.kind, f.kind)))), None)
+        if twin is not None:
+            merge_into(twin, f)
+            res.merged += 1
+            for s, o in scored:
+                if o is twin or not o.is_current or o.valid_from > twin.valid_from or s < SLOT_TEXT_SIMILARITY:
+                    continue
+                if (o.area_id == f.area_id or set(rare) & sim.terms[o.id]) and slot_changed(o, twin) \
+                        and sim.text(o, f) >= SLOT_TEXT_SIMILARITY:
+                    o.valid_to, o.superseded_by = twin.valid_from, twin.id
+                    twin.supersedes = twin.supersedes or o.id
+                    res.superseded += 1
             continue
         linked = False
         for s, o in scored:

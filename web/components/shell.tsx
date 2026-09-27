@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Settings, Bell } from "lucide-react";
 import { cn } from "./ui";
+import AskPanel from "./askpanel";
 
 export const ROUTES = [
   { href: "/", label: "Home" },
@@ -67,6 +68,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <AskPanel />
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface2"><Settings className="h-[18px] w-[18px]" strokeWidth={1.6} /></span>
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface2"><Bell className="h-[18px] w-[18px]" strokeWidth={1.6} /></span>
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sig text-[13px] font-medium text-white" title="Dave MacLeod, COO">DM</span>
