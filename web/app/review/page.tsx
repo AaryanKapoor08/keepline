@@ -99,12 +99,12 @@ function Item({ it, st, set, checked, toggle }: { it: any; st?: St; set: (s: St 
         <div className="mt-auto flex items-center gap-2 pt-4">
           {edit ? (
             <>
-              <button onClick={() => set({ s: "corrected", sha: sha(it.fact_id + text), text })} className="rounded-full bg-sig px-4 py-2 text-[13px] text-white">Save correction</button>
+              <button onClick={() => set({ s: "corrected", sha: sha(it.fact_id + text), text })} className="rounded-full bg-[var(--fg)] px-4 py-2 text-[13px] text-white">Save correction</button>
               <button onClick={() => setEdit(false)} className="rounded-full bg-white px-4 py-2 text-[13px]">Cancel</button>
             </>
           ) : (
             <>
-              <button onClick={() => set({ s: "approved", sha: it.sha })} className="rounded-full bg-sig px-4 py-2 text-[13px] text-white">Approve</button>
+              <button onClick={() => set({ s: "approved", sha: it.sha })} className="rounded-full bg-[var(--fg)] px-4 py-2 text-[13px] text-white">Approve</button>
               <button onClick={() => setEdit(true)} className="rounded-full bg-white px-4 py-2 text-[13px]">Correct</button>
               <button onClick={() => set({ s: "removed", sha: "" })} className="rounded-full bg-white px-4 py-2 text-[13px]">Remove</button>
               <button onClick={() => set({ s: "private", sha: "" })} className="ml-auto text-[13px] text-muted hover:text-fg">Keep private</button>

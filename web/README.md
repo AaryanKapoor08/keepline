@@ -18,17 +18,16 @@ Demo clock: Friday 2026-09-04. Sarah Chen's last day is Fri 2026-09-11.
 ## The 5-second pitch
 "Keepline is GitHub for company knowledge: every fact is a commit with an author and a receipt, changes are diffs, the leaver reviews her knowledge like a pull request, and you can check out what the company believed on any date."
 
-## Presenter script: 2 minutes (→ / Space moves to the next page)
+## Presenter script: 2 minutes (the owner's click order; → / Space moves between pages)
 
-| Page | Click | Say |
-|---|---|---|
-| Home | Sarah in **Upcoming departures** | "This is Harbourline's COO dashboard. Five of ten critical areas are known by one person, and Sarah Chen leaves in 7 days." |
-| Knowledge (Sarah's sheet) | open **Don'ts**, expand one; then ask pill 1 and pill 3 | "Here's what she knows, her don'ts, what she's handling, what only she can access, and who else knows it: for three systems, nobody. Ask about her areas: you get the current rule with a receipt, or 'I don't know, ask Mike'." |
-| Knowledge (Alex) | close the sheet, click **View as Alex** | "Alex joins her team Monday. Keepline shows him who to ask about what, and the don'ts to learn first." |
-| History | **Open reviews**, then **May 31** vs **Today** | "Every fact has a history. The recon rule was a diff: skip the 1st, then the 1st and 15th. Sarah reviews what was captured like a pull request; nothing is shared until she merges it. Check out any date, which is Snowflake Time Travel." |
-| Simulate | **Run simulation**, switch Fastest ↔ Balanced, then tap **Aisha** in What-if | "Before staffing the CoreLink v3 upgrade, play out 2,000 futures. Fastest leaves an area uncovered 100% of the time. Balanced pairs Aisha as a learner and cuts that to 64%. If Aisha also leaves mid-project, you see what stalls. It's a recommendation for a manager to approve, never a performance score." |
-| Proof | **Train** | "On 216 held-out questions: 43% right with a source vs 36%; confidently wrong 44% vs 72%. The bandit learns when to answer, abstain or route; honestly, it hasn't beaten the calibrated default yet." |
-| Snowflake | **Execute workflow** | "It all runs inside Snowflake. Glean finds what your company knows. Keepline shows what it's about to forget." |
+1. **Home** → click **Open Sarah's knowledge**.
+2. **Knowledge** opens with Sarah's sheet: scroll to **Don'ts** (CoreLink Friday rule near the top) and expand one receipt.
+3. **Review** (next page): Sarah's queue. Click **Approve** on the first card ("Merged into company memory · commit …"). Optional: **Correct** the next one.
+4. Press **⌘K** (or the "Ask Keepline" pill), asking as Alex: click "What should I know before touching reconciliation?", then type or click "What's the Bedford branch wifi password?" (an honest "I don't know"). Open **How I found this ›** once.
+5. Back on **Knowledge**: **Simulate a change** → the field says "Upgrade the CoreLink API to v3 next month" → **Run** → click **Resilient** in the black card. Click a red "rules" badge if there's time.
+6. **Proof**: point at the three rows (test split, N shown).
+
+Resetting between rehearsals: press **R** on the Review page (or reload). Nothing in the demo path writes to the database.
 
 ## 4-minute version (additions)
 

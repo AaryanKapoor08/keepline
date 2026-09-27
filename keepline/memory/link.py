@@ -179,6 +179,25 @@ def supersede(old: Fact, new: Fact) -> None:
     new.confidence = round(min(0.97, new.confidence + 0.05), 3)  # an explicit update is a strong signal
 
 
+def _subject_match(a: Fact, b: Fact) -> bool:
+    """Same subject: shared subject/topic word, allowing abbreviations ("recon" ~ "reconciliation")."""
+    ta = content_set(f"{a.subject or ''} {a.text}")
+    tb = content_set(f"{b.subject or ''} {b.text}")
+    if ta & tb - {"job", "run", "time", "day"}:
+        return True
+    return any(len(x) >= 4 and len(y) >= 4 and (x.startswith(y) or y.startswith(x)) for x in ta for y in tb)
+
+
+def _pure_restatement(g: Fact, f: Fact, sf: dict[str, frozenset[str]], sim: "_Sim") -> bool:
+    """f states exactly the value set of the current fact g (same typed slots AND same raw numbers), about the
+    same subject and area. Anything with a differing or additional value is a new version, never a restatement."""
+    if not sf or not g.is_current or g.valid_from >= f.valid_from or g.area_id != f.area_id:
+        return False
+    if slots(g.text) != sf or numbers(g.text) != numbers(f.text) or not compatible(g.kind, f.kind):
+        return False
+    return sim.text(g, f) >= SLOT_TEXT_SIMILARITY or _subject_match(g, f)
+
+
 def link_facts(facts: Sequence[Fact]) -> LinkResult:
     """Process facts chronologically; each new fact is merged, supersedes, conflicts with, or is added.
 
@@ -209,22 +228,24 @@ def link_facts(facts: Sequence[Fact]) -> LinkResult:
         # A restatement of a value already current in an earlier fact ("now skips the 1st AND the 15th" after the
         # May rule said the same) is another receipt for that fact, so versions date from the EARLIEST statement.
         sf = slots(f.text)
-        n_vals = sum(len(v) for v in sf.values())
-        twin = next((g for _s, g in scored if sf and g.is_current and slots(g.text) == sf
-                     and (sim.text(g, f) >= SLOT_TEXT_SIMILARITY
-                          or (n_vals >= 2 and g.area_id == f.area_id and compatible(g.kind, f.kind)))), None)
+        twins = [g for _s, g in scored if _pure_restatement(g, f, sf, sim)]
+        twin = min(twins, key=lambda g: (g.valid_from, g.id)) if twins else None  # earliest statement of the value
         if twin is not None:
-            merge_into(twin, f)
-            res.merged += 1
-            for s, o in scored:
-                if o is twin or not o.is_current or o.valid_from > twin.valid_from or s < SLOT_TEXT_SIMILARITY:
-                    continue
-                if (o.area_id == f.area_id or set(rare) & sim.terms[o.id]) and slot_changed(o, twin) \
-                        and sim.text(o, f) >= SLOT_TEXT_SIMILARITY:
+            # Only when f would otherwise have become the new version of some older fact: those older facts are
+            # closed at the twin's (earliest) date instead, and f becomes one more receipt for the twin. The set of
+            # supersession links is unchanged; only the date is corrected.
+            targets = [o for s2, o in scored
+                       if o is not twin and o.is_current and o.valid_from <= twin.valid_from and s2 >= SLOT_TEXT_SIMILARITY
+                       and (o.area_id == f.area_id or set(rare) & sim.terms[o.id])
+                       and update_signal(o, f, s2, sim.text(o, f)) and (o.kind == f.kind or _cue(f) or slot_changed(o, f))]
+            if targets:
+                merge_into(twin, f)
+                res.merged += 1
+                for o in targets:
                     o.valid_to, o.superseded_by = twin.valid_from, twin.id
                     twin.supersedes = twin.supersedes or o.id
                     res.superseded += 1
-            continue
+                continue
         linked = False
         for s, o in scored:
             if not o.is_current or s < SLOT_TEXT_SIMILARITY:

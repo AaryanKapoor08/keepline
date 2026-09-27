@@ -72,7 +72,7 @@ function Answer({ t, onRoute }: { t: Turn; onRoute: (id: string) => void }) {
   const [trace, setTrace] = useState(false);
   const a = t.a;
   if (!a) return <div className="text-[15px] text-muted">Looking through the company&apos;s memory…</div>;
-  const text = String(a.text ?? "").replace(/--/g, "—").replace(/\s*\[[^\]]*(?:slack|email|ticket|doc)-[^\]]*\]/g, "").replace(/\n{3,}/g, "\n\n").trim();
+  const text = String(a.text ?? "").replace(/--/g, "—").replace(/\s*\[[^\]]*(?:slack|email|ticket|doc)-[^\]]*\]/g, "").replace(/\n{3,}/g, "\n\n").replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2").trim();
   return (
     <div>
       <Memo text={text} />
