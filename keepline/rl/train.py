@@ -17,6 +17,9 @@ Outputs (schemas documented here because Agent D's app reads them):
      "hyperparam_dev_reward": {"features=..,alpha=..,ridge=..": dev mean reward},
      "fingerprint",
      "n_train", "n_dev", "arms": [Arm.to_dict()], "featurizer": {...}, "model": {...LinUCB A/b...},
+     "policy": {"name", "type": "linucb"|"area_table", "table": {area: arm_key}, "default": arm_key|None},
+         # the policy actually shipped (load_policy); chosen on DEV among policy_candidates_dev
+     "policy_candidates_dev": {name: dev mean reward},
      "per_area": {area_id: {"arm": key, "share": float, "n": int, "arm_counts": {key: n}}},
      "dev": {"bandit", "default", "best_fixed", "best_fixed_arm", "oracle", "random": mean reward, "n"},
          # best_fixed_arm is chosen on TRAIN; oracle = per-question best arm in hindsight (upper bound)
@@ -142,6 +145,54 @@ def summary(model: ContextualBandit, X: np.ndarray, R: np.ndarray, default: np.n
     }
 
 
+SHRINK_GRID = (0.0, 2.0, 5.0, 20.0, 1e9)  # prior strength m (pseudo-pulls); 1e9 == one global arm
+
+
+def _area(ctx: dict[str, Any]) -> str:
+    return str(ctx.get("area_id") or "unknown")
+
+
+def shrinkage_table(runs: Sequence[Run], step_area: Sequence[str], n_arms: int, m: float) -> tuple[dict[str, int], int]:
+    """Hierarchical per-area arm choice from the bandit's *own observed* pulls (partial feedback only).
+
+    Each area's estimate for an arm is shrunk toward that arm's global mean with ``m`` pseudo-pulls:
+    ``v[a, j] = (sum_r[a, j] + m * g[j]) / (n[a, j] + m)``. Small areas borrow strength from the whole company;
+    big areas keep their own preference. ``step_area[i]`` is the area of train question i.
+    """
+    s_g, n_g = np.zeros(n_arms), np.zeros(n_arms)
+    s_a: dict[str, np.ndarray] = defaultdict(lambda: np.zeros(n_arms))
+    n_a: dict[str, np.ndarray] = defaultdict(lambda: np.zeros(n_arms))
+    for run in runs:
+        for i, a, r in zip(run.order, run.pulls, run.rewards):
+            s_g[a] += r
+            n_g[a] += 1
+            s_a[step_area[i]][a] += r
+            n_a[step_area[i]][a] += 1
+    g = np.where(n_g > 0, s_g / np.maximum(n_g, 1), -np.inf)
+    default = int(np.argmax(g))
+    table = {}
+    for area in sorted(s_a):
+        denom = n_a[area] + m
+        v = np.where(denom > 0, (s_a[area] + m * np.where(np.isfinite(g), g, 0.0)) / np.maximum(denom, 1e-12), -np.inf)
+        v[~np.isfinite(g)] = -np.inf
+        table[area] = int(np.argmax(v))
+    return table, default
+
+
+def table_rewards(table: dict[str, int], default: int, ctxs: Sequence[dict], R: np.ndarray) -> np.ndarray:
+    choice = [table.get(_area(c), default) for c in ctxs]
+    return R[np.arange(len(ctxs)), choice] if len(ctxs) else np.zeros(0)
+
+
+def _per_area_selected(sel: dict, model: ContextualBandit, X: np.ndarray, ctxs: Sequence[dict],
+                       arms: list[Arm]) -> dict:  # fmt: skip
+    if sel["type"] == "linucb":
+        return per_area_choice(model, X, [c.get("area_id") for c in ctxs], arms)
+    counts = Counter(_area(c) for c in ctxs)
+    return {a: {"arm": arms[sel["table"].get(a, sel["default"])].key, "share": 1.0, "n": n,
+                "arm_counts": {arms[sel["table"].get(a, sel["default"])].key: n}} for a, n in sorted(counts.items())}  # fmt: skip
+
+
 def per_area_choice(model: ContextualBandit, X: np.ndarray, areas: list[str | None], arms: list[Arm]) -> dict:
     by_area: dict[str, Counter[str]] = defaultdict(Counter)
     for x, area in zip(X, areas):
@@ -193,6 +244,29 @@ def train(
 
     series = curve_series(run, R_tr, d_tr, seed)
     best_train = int(np.argmax(R_tr.mean(axis=0)))
+
+    # Policy selection on DEV among: the tuned LinUCB, hierarchical per-area tables built from the bandit's own
+    # logged pulls (every hyperparameter run's interactions pooled), and the best fixed arm on TRAIN. Including
+    # the fixed arm guarantees the shipped policy is never worse on dev than the best single setting.
+    step_area = [_area(c) for c in ctx_tr]
+    candidates: dict[str, dict[str, Any]] = {
+        "best_fixed_train": {"type": "area_table", "table": {}, "default": best_train,
+                             "dev": float(R_dev[:, best_train].mean()) if len(dev_qs) else 0.0},
+    }  # fmt: skip
+    for m in sorted(SHRINK_GRID, reverse=True):
+        table, default = shrinkage_table(list(runs.values()), step_area, len(arms), m)
+        name = "global_arm_from_logs" if m >= 1e9 else f"area_table_m{m:g}"
+        candidates[name] = {"type": "area_table", "table": table, "default": default,
+                            "dev": float(table_rewards(table, default, ctx_dev, R_dev).mean()) if len(dev_qs) else 0.0}  # fmt: skip
+    candidates["linucb"] = {"type": "linucb", "dev": dev_scores[(mode, alpha, ridge)]}
+    order = list(candidates)  # insertion order = tie preference (simplest first)
+    selected = max(order, key=lambda k: (round(candidates[k]["dev"], 6), -order.index(k)))
+    sel = candidates[selected]
+
+    def selected_rewards(ctxs: Sequence[dict], Xm: np.ndarray, R: np.ndarray) -> np.ndarray:
+        if sel["type"] == "linucb":
+            return greedy_rewards(run.model, Xm, R)[1]
+        return table_rewards(sel["table"], sel["default"], ctxs, R)
     stats, timeline = arm_stats(run, arms, R_tr, R_dev)
     # window = one epoch: every train question appears exactly once per window, so the series are comparable
     # (with a short window the curve mostly shows which questions happened to come up, not learning)
@@ -223,10 +297,15 @@ def train(
         "arms": [a.to_dict() for a in arms],
         "featurizer": feat.to_dict(),
         "model": run.model.to_dict(),
-        "per_area": per_area_choice(run.model, np.vstack([X_tr, X_dev]),
-                                    [c.get("area_id") for c in ctx_tr + ctx_dev], arms),  # fmt: skip
-        "train": summary(run.model, X_tr, R_tr, d_tr, arms, seed, best_train),
-        "dev": summary(run.model, X_dev, R_dev, d_dev, arms, seed, best_train),
+        "policy": {"name": selected, "type": sel["type"],
+                   "table": {a: arms[j].key for a, j in sel.get("table", {}).items()},
+                   "default": arms[sel["default"]].key if "default" in sel else None},  # fmt: skip
+        "policy_candidates_dev": {k: round(v["dev"], 4) for k, v in candidates.items()},
+        "per_area": _per_area_selected(sel, run.model, np.vstack([X_tr, X_dev]), ctx_tr + ctx_dev, arms),
+        "train": {**summary(run.model, X_tr, R_tr, d_tr, arms, seed, best_train), "selected_policy": selected,
+                  "selected": round(float(selected_rewards(ctx_tr, X_tr, R_tr).mean()), 4) if len(ctx_tr) else None},
+        "dev": {**summary(run.model, X_dev, R_dev, d_dev, arms, seed, best_train), "selected_policy": selected,
+                "selected": round(float(selected_rewards(ctx_dev, X_dev, R_dev).mean()), 4) if len(ctx_dev) else None},
         "pull_counts": {arms[i].key: int(c) for i, c in enumerate(run.model.counts)},
         "arm_stats": stats,
         "arm_timeline": timeline,
@@ -305,6 +384,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         fh.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in log_rows)
     d = bandit["dev"]
     print(f"features={bandit['features']} alpha={bandit['alpha']} ridge={bandit['ridge']}  train N={bandit['n_train']}  dev N={bandit['n_dev']}  steps={curve['steps']}")
+    print(f"SELECTED policy on dev: {bandit['policy']['name']} -> dev {d['selected']}  candidates {bandit['policy_candidates_dev']}")
     print("DEV mean reward: " + "  ".join(f"{k}={d.get(k)}" for k in SERIES) + f"  (best arm {d.get('best_fixed_arm')})")
     for area, row in bandit["per_area"].items():
         print(f"  {area:<24} -> {row['arm']:<28} share={row['share']:.2f} n={row['n']}")

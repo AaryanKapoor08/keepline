@@ -105,6 +105,13 @@ def reliability_chart(bench: Mapping[str, Any], out_dir: Path) -> Path:
         ece = m["ece"]
         ax.plot(xs, ys, marker="o", markersize=6, linewidth=2, color=COLORS.get(k, "#2a78d6"),
                 label=f"{SYSTEM_LABELS.get(k, k)}  ECE={ece['value']:.2f} (N={ece['n']})")  # fmt: skip
+    unc = bench["systems"].get("keepline_rl", {}).get("ece_uncalibrated")
+    if unc and unc.get("value") is not None:
+        pts = [(b["confidence"], b["accuracy"]) for b in unc["reliability_bins"] if b["n"]]
+        if pts:
+            xs, ys = zip(*pts)
+            ax.plot(xs, ys, marker="s", markersize=5, linewidth=1.4, linestyle="--", color=INK2,
+                    label=f"Keepline + RL, hand-set confidence  ECE={unc['value']:.2f} (N={unc['n']})")  # fmt: skip
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
     ax.set_xlabel("Stated confidence", color=INK2)

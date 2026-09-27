@@ -17,6 +17,7 @@ Output ``data/results/benchmark_<split>.json`` (schema v1, read by the Streamlit
               # current_fact_accuracy, stale_rate, routing_accuracy, citation_valid_rate, answer_rate
           "mean_reward": {"value", "n", "ci95"},
           "ece": {"value", "n"}, "reliability_bins": [{"lo","hi","n","confidence","accuracy"}],
+          "ece_uncalibrated": {"value", "n", "reliability_bins"} | null,   # agent's hand-set formula confidence
           "outcomes": {outcome: count},
           "by_qtype": {qtype: {"n","correct_rate","hallucination_rate","mean_reward","outcomes"}},
           "by_area":  {area_id: {...same...}}
@@ -47,7 +48,7 @@ from typing import Any
 from keepline.config import RESULTS_DIR
 from keepline.contracts import Answer, Question
 from keepline.eval.grader import grade, llm_judge
-from keepline.eval.metrics import cohen_kappa, proportion, summarize
+from keepline.eval.metrics import cohen_kappa, proportion, reliability, summarize
 from keepline.eval.world import EvalWorld
 from keepline.rl.rewards import Grade
 
@@ -99,6 +100,7 @@ def make_row(system: str, q: Question, a: Answer, g: Grade, arm: str) -> dict[st
         "citations": [{"doc_id": c.doc_id, "quote": c.quote[:300], "is_current": c.is_current} for c in a.said],
         "route_to": list(a.route_to),
         "confidence": round(float(a.confidence), 4),
+        "formula_confidence": _formula_conf(a),
         "outcome": str(g.outcome),
         "correct": g.correct,
         "citation_valid": g.citation_valid,
@@ -106,6 +108,12 @@ def make_row(system: str, q: Question, a: Answer, g: Grade, arm: str) -> dict[st
         "notes": g.notes,
         "arm": arm,
     }
+
+
+def _formula_conf(a: Answer) -> float | None:
+    """The agent's hand-set (uncalibrated) confidence, when it exposes one -- for the before/after ECE."""
+    v = ((a.debug or {}).get("features") or {}).get("formula_confidence")
+    return round(float(v), 4) if isinstance(v, (int, float)) else None
 
 
 def run_system(name: str, answer_fn: AnswerFn, questions: Sequence[Question], world: EvalWorld) -> list[dict]:
@@ -256,6 +264,7 @@ def run_benchmark(split: str, systems: Sequence[str], llm: str = "none", judge: 
     for name in systems:
         sys_rows = run_system(name, built.fns[name], questions, world)
         per_system[name] = summarize(sys_rows)
+        per_system[name]["ece_uncalibrated"] = _uncalibrated_ece(sys_rows)
         rows += sys_rows
         log.info("%s: done (%d rows)", name, len(sys_rows))
     built.save()  # persist newly cached answers
@@ -304,6 +313,15 @@ def examples(rows: Sequence[Mapping[str, Any]], per_outcome: int = 3) -> dict[st
         if len(bucket) < per_outcome:
             bucket.append(r)
     return out
+
+
+def _uncalibrated_ece(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any] | None:
+    """ECE of the agent's formula confidence on the same answered rows (None if not exposed)."""
+    swapped = [{**r, "confidence": r["formula_confidence"]} for r in rows if r.get("formula_confidence") is not None]
+    if not swapped:
+        return None
+    ece, bins = reliability(swapped)
+    return {**ece, "reliability_bins": bins}
 
 
 def _headline(m: Mapping[str, Any]) -> dict[str, Any]:

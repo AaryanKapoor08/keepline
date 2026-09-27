@@ -45,7 +45,8 @@ class Agent(Protocol):
 
 
 def agent_fingerprint(extra: str = "") -> str:
-    """Hash of everything that can change an answer: agent/retrieval/memory code, the memory build, LLM mode."""
+    """Hash of everything that can change an answer: agent/retrieval/memory code, the memory build, the learned
+    calibrator, and the LLM mode."""
     h = hashlib.sha256(extra.encode())
     for pkg in ("agent", "retrieval", "memory"):
         for p in sorted((ROOT / "keepline" / pkg).glob("*.py")):
@@ -56,6 +57,9 @@ def agent_fingerprint(extra: str = "") -> str:
             if p.is_file():
                 st = p.stat()
                 h.update(f"{p.name}:{st.st_size}:{st.st_mtime_ns}".encode())
+    calibrator = RESULTS_DIR / "calibrator.json"  # the agent's confidence (hence its decisions) depends on it
+    if calibrator.exists():
+        h.update(calibrator.read_bytes())
     from keepline.config import LLM
 
     h.update(LLM.provider.encode())
@@ -100,8 +104,9 @@ class AnswerCache:
 
 
 def _answer_record(a: Answer) -> dict[str, Any]:
-    """Serialisable answer; ``debug`` is dropped (it can be large or hold non-JSON objects)."""
-    a = dataclasses.replace(a, debug={})
+    """Serialisable answer; ``debug`` is trimmed to the numeric features (the rest can be large / non-JSON)."""
+    feats = (a.debug or {}).get("features")
+    a = dataclasses.replace(a, debug={"features": feats} if isinstance(feats, dict) else {})
     try:
         return to_dict(a)
     except TypeError:

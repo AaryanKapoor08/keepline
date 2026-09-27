@@ -69,6 +69,12 @@ def load_arm_policy(path: Path = BANDIT_PATH) -> ArmPolicyFn | None:
     except Exception as exc:  # noqa: BLE001 -- a corrupt file must not take the app down
         log.warning("could not load bandit (%s); using default PolicyParams", exc)
         return None
+    pol = d.get("policy") or {"type": "linucb"}
+    if pol.get("type") == "area_table":
+        by_key = {a.key: a for a in arms}
+        table = {area: by_key[k] for area, k in pol.get("table", {}).items()}
+        default = by_key[pol["default"]]
+        return lambda ctx: table.get(str(ctx.get("area_id") or "unknown"), default)
     return greedy_arm_policy(model, feat, arms)
 
 
