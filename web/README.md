@@ -15,27 +15,26 @@ Refresh the snapshot after the data or results change: `python scripts/export_we
 Keys: `→` / `Space` next beat · `←` back · `1`–`9` jump to a beat · `P` presenter focus (collapses the sidebar).
 Demo clock: Friday 2026-09-04. Sarah Chen's last day is Fri 2026-09-11.
 
-## Presenter script: 2 minutes
+## Presenter script: 2 minutes (one page per beat; → / Space moves to the next page)
 
-| Time | Screen | Click | Say |
-|---|---|---|---|
-| 0:00 | Overview | — | "Sarah Chen is Harbourline Credit Union's senior backend engineer. Her last day is next Friday. When she leaves, what breaks on Monday? Keepline read 3,914 messages, left out the private DMs, and found 45 things only Sarah knows." |
-| 0:15 | Constellation | Click **Open Sarah Chen**, then press ▶ | "This is the company's knowledge: people, areas, facts, receipts. The red areas are one person deep. This is Sarah's memory replayed from March. Watch May: 'skip the 1st' gets superseded by 'skip the 1st and the 15th'. Every fact records who said it, when, and what replaced it." |
-| 0:35 | Knowledge profile | — | "This is what we captured from Sarah, not a clone of her. She reviews every item, DMs are off by default, and none of it goes into a performance review." |
-| 0:45 | Risk map | Toggle **Simulate Sarah's departure** | "Risk is importance × lack of redundancy × departure. Flip the switch: three areas are orphaned, with 12 landmines and 4 vendor contacts nobody else holds." |
-| 0:55 | Handoff pack | Wait for the loader, expand one landmine, click **Sarah signs off** | "The handoff pack writes itself from her own receipts. Every line has a verbatim quote. Sarah confirms it and signs." |
-| 1:10 | Ask | Click chip 1 (reconciliation), then chip 4 (NAS RTO) | "Alex starts Monday. He gets the current rule, and the old one shown as replaced. When there's no evidence, Keepline says so: 'I don't know, ask Mike.'" |
-| 1:25 | Simulator | **Check** on "Rotate the CoreLink API key this Friday" | "Before you act, check the plan against memory. Conflict: Sarah wrote on June 10, 'don't rotate the CoreLink key on a Friday.'" |
-| 1:40 | RL lab & proof | Let the replay run; point at the test table | "A contextual bandit is rewarded +1 for a cited answer and −2 for a confident wrong one, graded against a truth file the product never sees. On the frozen test split (N=216), cited accuracy is 43% vs 36% for plain search. Confident-wrong answers drop from 72% to 44%, and calibration error falls from 0.27 to 0.05." |
-| 1:55 | Snowflake & market | — | "It all runs inside Snowflake, so the data never leaves. Glean finds what your company knows. Keepline shows what it's about to forget, and saves it." |
+Each page opens with one headline and one black button. Press the button, then say the line.
 
-## Presenter script: 4 minutes (additions)
+| Page | Click | Say |
+|---|---|---|
+| Home | none | "Sarah Chen is Harbourline's senior backend engineer. She leaves Friday. 46 things leave with her, and 3 systems have no one else who knows them." |
+| Knowledge | **Replay history**, then click a red node | "This is her knowledge as a workflow: Sarah → her systems → what only she knows → who should take it over. Every fact keeps its history: the recon rule 'skip the 1st' was replaced by 'skip the 1st and 15th'. Click any node for the receipts." |
+| Risk | **Simulate her leaving** | "Flip the switch. Three systems go to zero people. 4 systems only she can access, 12 never-do-this rules, 26 recurring tasks with no owner." |
+| Handoff | **Generate handoff pack**, open **Landmines**, then **Sarah signs off** | "The handoff pack writes itself from her own messages, each line with a quote, a date and a link. She confirms it and signs." |
+| Ask | (first answer is pre-loaded), then the NAS question, then **Ask Mike** | "Alex starts Monday. He gets the current rule with its source. When there's no evidence, Keepline says 'I don't know, ask Mike' instead of guessing." |
+| Simulator | (conflict is pre-loaded), then **Why** | "Before you act, check the plan. Rotating the CoreLink key this Friday conflicts with a rule Sarah wrote on June 10." |
+| Proof | **Train**, then **Add noise** | "On 216 held-out questions: 43% right with a source vs 36% for plain search, confidently wrong 44% vs 72%, routed to the right person 100% vs 57%. The bandit learns when to answer, abstain or route. Honestly, its thresholds haven't beaten the calibrated default yet." |
+| Snowflake | **Execute workflow** | "All of it runs inside Snowflake, so the data never leaves. Glean finds what your company knows. Keepline shows what it's about to forget." |
 
-- **Overview (+15s):** read the countdown. Point out the sole-access systems, vendor contacts and recurring tasks listed in the footer.
-- **Constellation (+30s):** hover a red diamond (landmine) and an area to show its risk and bus factor. Scrub the slider by hand to May, then to August (CoreLink rep Dan Holt → Maria Santos; 90-day → 60-day key rotation).
-- **Profile (+15s):** walk through the gap questions ("Landmine with no recorded reason"). These are what Keepline asks Sarah before she leaves.
-- **Handoff (+20s):** open an access item and show the receipt: monospace doc id, date and deep link.
-- **Ask (+20s):** "Is it safe to rotate the CoreLink API key on a Friday?" Keepline knows today is a Friday. Then show the confidence meter and the policy arm.
-- **Simulator (+30s):** run the departure what-if for Sarah, Mike and Tom by 2026-12-31. Then plan staffing on the pasted brief: bus factor before → after, with a learner and reviewer pairing.
-- **RL lab (+40s):** step through the loop cards: question → features → arm → action → grader → reward. Drag the **chaos ladder** from L0 to L4 (typos, slang, bot spam, 3× chatter). Plain search hallucinates more as the data gets messier, while Keepline holds or abstains. Be honest: the bandit thresholds tuned on dev over-abstain on test. The calibrated default is the headline, and more real usage data is the roadmap.
-- **Close (+10s):** go through the pricing and the Glean comparison table.
+## 4-minute version (additions)
+
+- Knowledge: click Reconciliation, then the landmines node, and read one receipt aloud.
+- Risk: click **View all** to open the full lists.
+- Ask: open **Ask your own question** and type a live question (needs the API running).
+- Simulator: try "Run the reconciliation job manually on the 15th".
+- Proof: drag the noise slider from Clean to Brutal. Plain search gets worse; Keepline holds or abstains.
+- Snowflake: open **Market** on the pricing card.

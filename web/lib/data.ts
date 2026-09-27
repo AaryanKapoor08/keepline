@@ -83,14 +83,14 @@ export const PEOPLE: Record<string, { name: string; role: string; color: string 
   marc: { name: "Marc Leblanc", role: "CEO", color: "#8aa4b8" },
   dave: { name: "Dave MacLeod", role: "COO", color: "#8aa4b8" },
   sarah: { name: "Sarah Chen", role: "Senior Backend Engineer", color: "#ff4d5e" },
-  aisha: { name: "Aisha Rahman", role: "Junior Backend Engineer", color: "#2ee6d0" },
+  aisha: { name: "Aisha Rahman", role: "Junior Backend Engineer", color: "#0071e3" },
   alex: { name: "Alex Rivera", role: "Backend Engineer (new)", color: "#22b8e6" },
   mike: { name: "Mike O'Brien", role: "IT Infrastructure (contract)", color: "#d6b46a" },
-  nadia: { name: "Nadia Kaur", role: "IT Support Analyst", color: "#2ee6d0" },
+  nadia: { name: "Nadia Kaur", role: "IT Support Analyst", color: "#0071e3" },
   tom: { name: "Tom Bouchard", role: "Compliance Officer", color: "#d6b46a" },
-  priya: { name: "Priya Nair", role: "Finance & Payroll", color: "#2ee6d0" },
-  jen: { name: "Jen Theriault", role: "Member Services Lead", color: "#2ee6d0" },
-  colin: { name: "Colin Doucette", role: "Member Services", color: "#2ee6d0" },
+  priya: { name: "Priya Nair", role: "Finance & Payroll", color: "#0071e3" },
+  jen: { name: "Jen Theriault", role: "Member Services Lead", color: "#0071e3" },
+  colin: { name: "Colin Doucette", role: "Member Services", color: "#0071e3" },
 };
 export const pname = (id?: string | null) => (id ? PEOPLE[id]?.name ?? id : "—");
 export const first = (id?: string | null) => pname(id).split(" ")[0];
@@ -102,14 +102,14 @@ export const initials = (id?: string | null) =>
     .slice(0, 2);
 
 export const KIND_COLOR: Record<string, string> = {
-  landmine: "#ff4d5e",
-  access: "#2ee6d0",
-  vendor_contact: "#8ad8ce",
-  recurring_task: "#4fb3a8",
-  procedure: "#6f9a95",
-  decision: "#aebfc8",
-  owner: "#8a9aa6",
-  fact: "#4f5f69",
+  landmine: "#ff3b30",
+  access: "#0071e3",
+  vendor_contact: "#1d1d1f",
+  recurring_task: "#6e6e73",
+  procedure: "#86868b",
+  decision: "#a1a1a6",
+  owner: "#aeaeb2",
+  fact: "#c7c7cc",
 };
 export const KIND_LABEL: Record<string, string> = {
   landmine: "Landmines",
@@ -125,5 +125,5 @@ export const KIND_LABEL: Record<string, string> = {
 export const fmtDate = (s?: string | null) =>
   s ? new Date(s.length <= 10 ? s + "T12:00:00" : s).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" }) : "";
 
-export const riskColor = (r: number) => (r >= 0.6 ? "#ff4d5e" : r >= 0.35 ? "#ff7a86" : r >= 0.15 ? "#d6b46a" : "#2ee6d0");
+export const riskColor = (r: number) => (r >= 0.35 ? "#ff3b30" : r >= 0.15 ? "#1d1d1f" : "#86868b");
 export const riskLevel = (r: number) => (r >= 0.6 ? "Critical" : r >= 0.35 ? "High" : r >= 0.15 ? "Elevated" : "Low");

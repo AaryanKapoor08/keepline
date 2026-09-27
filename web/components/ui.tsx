@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { animate, motion, useInView } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { useState } from "react";
 import { Hash, Mail, Ticket, FileText, Mic, ExternalLink, ChevronDown } from "lucide-react";
 import { fmtDate, pname } from "@/lib/data";
 
@@ -9,21 +9,13 @@ export function cn(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
-export function Ticker({ value, decimals = 0, suffix = "", prefix = "", duration = 1.4, className }: {
+export function Ticker({ value, decimals = 0, suffix = "", prefix = "", className }: {
   value: number; decimals?: number; suffix?: string; prefix?: string; duration?: number; className?: string;
 }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true });
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    if (!inView) return;
-    const c = animate(0, value, { duration, ease: [0.16, 1, 0.3, 1], onUpdate: setV });
-    return () => c.stop();
-  }, [inView, value, duration]);
   return (
-    <span ref={ref} className={cn("tabular-nums", className)}>
+    <span className={cn("tabular-nums", className)}>
       {prefix}
-      {v.toLocaleString("en-CA", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}
+      {value.toLocaleString("en-CA", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}
       {suffix}
     </span>
   );
@@ -32,13 +24,14 @@ export function Ticker({ value, decimals = 0, suffix = "", prefix = "", duration
 export function Card({ children, className, delay = 0, glow }: { children: React.ReactNode; className?: string; delay?: number; glow?: "alarm" | "accent" }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.7, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={cn(
-        "glass glass-hover rounded-2xl relative",
-        glow === "alarm" && "shadow-[0_0_0_1px_rgba(255,77,94,0.35),0_0_40px_-8px_rgba(255,77,94,0.35)]",
-        glow === "accent" && "shadow-[0_0_0_1px_rgba(46,230,208,0.3),0_0_40px_-8px_rgba(46,230,208,0.3)]",
+        "glass rounded-[22px] relative",
+        glow === "alarm" && "",
+        glow === "accent" && "",
         className,
       )}
     >
@@ -49,7 +42,7 @@ export function Card({ children, className, delay = 0, glow }: { children: React
 
 export function Badge({ children, tone = "muted", className }: { children: React.ReactNode; tone?: "muted" | "accent" | "alarm" | "warn" | "ok" | "blue"; className?: string }) {
   const tones: Record<string, string> = {
-    muted: "text-muted border-line bg-white/[0.03]",
+    muted: "text-muted border-line bg-bg2",
     accent: "text-accent border-accent/30 bg-accent/10",
     alarm: "text-alarm border-alarm/40 bg-alarm/10",
     warn: "text-warn border-warn/30 bg-warn/10",
@@ -60,20 +53,18 @@ export function Badge({ children, tone = "muted", className }: { children: React
 }
 
 export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("font-mono text-[12px] uppercase tracking-[0.18em] text-accent/90", className)}>{children}</div>;
+  return <div className={cn("text-[17px] font-semibold text-warn", className)}>{children}</div>;
 }
 
 export function PageHeader({ eyebrow, title, sub, right }: { eyebrow: string; title: React.ReactNode; sub?: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <div className="mb-7 flex items-end justify-between gap-6">
-      <div>
-        <Eyebrow>{eyebrow}</Eyebrow>
-        <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-2 text-[34px] font-semibold leading-tight tracking-tight text-gradient">
-          {title}
-        </motion.h1>
-        {sub && <p className="mt-2 max-w-3xl text-[15px] text-muted">{sub}</p>}
-      </div>
-      {right}
+    <div className="mb-12 flex flex-col items-center text-center">
+      <div className="text-[19px] font-semibold text-muted">{eyebrow.replace(/^\d+ · /, "")}</div>
+      <motion.h1 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }} className="headline mt-2 max-w-[900px] text-[56px] text-fg">
+        {title}
+      </motion.h1>
+      {sub && <p className="mt-4 max-w-[760px] text-[21px] leading-[1.38] text-muted">{sub}</p>}
+      {right && <div className="mt-6">{right}</div>}
     </div>
   );
 }
@@ -92,9 +83,9 @@ export const srcFromId = (id?: string) => (id || "").split("-")[0];
 export function Receipt({ c, compact }: { c: any; compact?: boolean }) {
   const src = c.source_type || srcFromId(c.doc_id);
   return (
-    <div className={cn("rounded-xl border border-line bg-black/25 p-3", c.is_current === false && "opacity-70")}>
+    <div className={cn("rounded-xl border border-line bg-bg2 p-3", c.is_current === false && "opacity-70")}>
       <div className="flex items-start gap-2">
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/5 text-muted">
+        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-black/[0.06] text-muted">
           <SourceIcon type={src} />
         </div>
         <div className="min-w-0 flex-1">
@@ -145,7 +136,7 @@ export function Ring({ value, size = 64, stroke = 6, color = "var(--accent)", la
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(148,180,200,0.12)" strokeWidth={stroke} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(0,0,0,0.08)" strokeWidth={stroke} fill="none" />
         <motion.circle
           cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none" strokeLinecap="round"
           strokeDasharray={c} initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: c * (1 - Math.max(0, Math.min(1, value))) }}
@@ -157,13 +148,9 @@ export function Ring({ value, size = 64, stroke = 6, color = "var(--accent)", la
   );
 }
 
-export function LiveDot({ live }: { live: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-dim" title={live ? "Live from the Keepline API" : "Static snapshot (API offline)"}>
-      <span className={cn("h-1.5 w-1.5 rounded-full", live ? "bg-ok shadow-[0_0_8px_var(--ok)]" : "bg-warn")} />
-      {live ? "LIVE" : "SNAPSHOT"}
-    </span>
-  );
+export function LiveDot(_: { live: boolean }) {
+  void _;
+  return null;
 }
 
 export function Empty({ title, cmd }: { title: string; cmd: string }) {

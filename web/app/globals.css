@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #06080b;
-  --bg-2: #0a0e13;
-  --panel: rgba(18, 24, 31, 0.62);
-  --line: rgba(148, 180, 200, 0.12);
-  --line-2: rgba(148, 180, 200, 0.22);
-  --fg: #e8eef2;
-  --muted: #8a9aa6;
-  --dim: #5a6a75;
-  --accent: #2ee6d0;
-  --accent-2: #2ee6d0;
-  --alarm: #ff4d5e;
-  --warn: #d6b46a;
-  --ok: #3ddc97;
+  --bg: #ffffff;
+  --bg-2: #f4f5f7;
+  --panel: #ffffff;
+  --line: #ececec;
+  --line-2: #d9d9de;
+  --fg: #111111;
+  --muted: #6e6e73;
+  --dim: #8e8e93;
+  --accent: #111111;
+  --accent-2: #111111;
+  --alarm: #d93025;
+  --warn: #6e6e73;
+  --ok: #1f9d55;
 }
 
 @theme inline {
@@ -28,27 +28,32 @@
   --color-warn: var(--warn);
   --color-ok: var(--ok);
   --color-line: var(--line);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-hanken), "Helvetica Neue", Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
 html,
 body {
-  background: var(--bg);
+  background: #e9eaed;
+  font-size: 16px;
   color: var(--fg);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-hanken), "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
-  background: var(--bg);
+  background: #e9eaed;
+  font-size: 16px;
   font-feature-settings: "tnum" 1, "cv11" 1;
   min-height: 100vh;
 }
 
 .glass {
-  background: #0c1116;
-  border: 1px solid var(--line);
+  background: #ffffff;
+  border: 1px solid transparent;
 }
+.on-white .glass { background: #f5f5f7; }
 
 .glass-hover {
   transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
@@ -58,7 +63,8 @@ body {
   box-shadow: none;
 }
 
-.grid-bg {
+.grid-bg { display: none; }
+.grid-bg-unused {
   background-image:
     linear-gradient(rgba(148, 180, 200, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 180, 200, 0.05) 1px, transparent 1px);
@@ -91,7 +97,7 @@ body {
   70% { box-shadow: 0 0 0 14px rgba(255, 77, 94, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 77, 94, 0); }
 }
-.pulse-alarm { animation: pulse-ring 2s infinite; }
+.pulse-alarm { }
 
 @keyframes beam {
   0% { transform: translateX(-100%); }
@@ -116,3 +122,19 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 
 input[type="range"] { accent-color: var(--accent); }
+
+.apple-link { color: #0066cc; }
+.apple-link:hover { text-decoration: underline; }
+.headline { font-weight: 600; letter-spacing: -0.022em; line-height: 1.05; }
+.pill { display:inline-flex; align-items:center; gap:6px; border-radius:980px; padding:11px 22px; font-size:17px; line-height:1; transition: background .2s, color .2s; }
+.pill-blue { background:#0071e3; color:#fff; } .pill-blue:hover { background:#0077ed; }
+.pill-outline { border:1px solid #0071e3; color:#0071e3; } .pill-outline:hover { background:#0071e3; color:#fff; }
+.dark-section .pill-outline { border-color:#2997ff; color:#2997ff; }
+
+.btn-primary { display:inline-flex; align-items:center; gap:8px; height:52px; padding:0 26px; border-radius:999px; background:#111; color:#fff; font-size:16px; font-weight:500; transition: background .2s; }
+.btn-primary:hover { background:#2a2a2a; }
+.btn-primary:disabled { opacity:.5; }
+.hatch { background: repeating-linear-gradient(135deg, #e3e4e8 0 2px, #f4f5f7 2px 7px); }
+.react-flow__controls { box-shadow:none !important; border-radius:12px; overflow:hidden; border:1px solid #ececec; }
+.react-flow__controls-button { background:#fff !important; border-bottom:1px solid #ececec !important; }
+.react-flow__edge-textbg { fill:#f4f5f7; }
