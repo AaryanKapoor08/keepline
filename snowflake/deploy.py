@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 import sqlite3
 import sys
 from dataclasses import dataclass
@@ -187,6 +188,11 @@ def _exec(conn: Any, stmt: str, params: Any = None) -> list[tuple]:
             return []
 
 
+def _is_idempotent_detach_noop(stmt: str, exc: Exception) -> bool:
+    """Detaching a policy that was never attached (first deploy) is a no-op, not a failure."""
+    return bool(re.search(r"\b(UNSET|DROP ALL)\b", stmt, re.I)) and "not attached" in str(exc).lower()
+
+
 def _sql_file_step(name: str, group: str) -> Step:
     stmts = sql_statements(name)
 
@@ -195,6 +201,8 @@ def _sql_file_step(name: str, group: str) -> Step:
             try:
                 _exec(conn, stmt)
             except Exception as exc:  # noqa: BLE001
+                if _is_idempotent_detach_noop(stmt, exc):
+                    continue
                 raise RuntimeError(f"{name} statement {k}/{len(stmts)} failed: {exc}\n---\n{stmt[:400]}") from exc
 
     return Step(group, f"{name}: {len(stmts)} statements", run)
