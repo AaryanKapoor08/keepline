@@ -148,6 +148,14 @@ function values(t: string): Set<string> {
 function tokens(t: string): Set<string> {
   return new Set(t.toLowerCase().match(/[a-z0-9]+/g)?.filter((w) => !STOP.has(w) && w.length > 1) ?? []);
 }
+const UNITS = new Set(["day", "days", "week", "weeks", "month", "months", "hour", "hours", "minute", "minutes", "min", "year", "years"]);
+/** True when two linked facts share no topic words beyond numbers and units: a spurious link, shown as a plain decision. */
+export function isUnrelated(newText: string, oldText: string): boolean {
+  const topical = (t: string) => new Set([...tokens(t)].filter((w) => !UNITS.has(w) && !/^\d/.test(w)));
+  const a = topical(newText);
+  for (const w of topical(oldText)) if (a.has(w)) return false;
+  return true;
+}
 /** True when the "new" fact only restates the old one (no new value, similar wording): not a real change. */
 export function isRestatement(newText: string, oldText: string): boolean {
   const nv = values(newText);

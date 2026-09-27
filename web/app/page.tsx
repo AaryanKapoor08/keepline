@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useData, fmtDate, isRestatement } from "@/lib/data";
+import { useData, fmtDate, isRestatement, isUnrelated } from "@/lib/data";
 import { PageTop, Card, Details, Big, Avatar } from "@/components/kit";
 import { cn } from "@/components/ui";
 
@@ -15,7 +15,7 @@ export default function Home() {
   const risk = useData("/risk", "risk").data;
   const ledger = useData("/ledger/decisions", "ledger_decisions").data;
   const latest = [...(ledger ?? [])]
-    .map((d: any) => ({ ...d, change: !!d.replaced && !isRestatement(d.message, d.replaced) }))
+    .map((d: any) => ({ ...d, change: !!d.replaced && !isRestatement(d.message, d.replaced) && !isUnrelated(d.message, d.replaced) }))
     .sort((a: any, b: any) => Number(b.change) - Number(a.change) || (a.valid_from < b.valid_from ? 1 : -1))
     .slice(0, 3);
   const people: any[] = meta?.people ?? [];

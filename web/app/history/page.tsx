@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Hash, Mail, Ticket, FileText } from "lucide-react";
-import { getJSON, useData, fmtDate, first, isRestatement } from "@/lib/data";
+import { getJSON, useData, fmtDate, first, isRestatement, isUnrelated } from "@/lib/data";
 import { PageTop, Card, Avatar, Details, Fade } from "@/components/kit";
 import { cn } from "@/components/ui";
 
@@ -79,6 +79,7 @@ export default function HistoryPage() {
       {tab === "decisions" && (
         <Card title="Decisions ledger" right={<span className="text-[13px] text-muted">{decisions?.length ?? 0} decisions and changes, each credited to who made it</span>}>
           {[...(decisions ?? [])]
+            .map((d: any) => (d.replaced && isUnrelated(d.message, d.replaced) ? { ...d, replaced: undefined } : d))
             .map((d: any) => ({ ...d, restated: d.replaced ? isRestatement(d.message, d.replaced) : false }))
             .sort((a: any, b: any) => Number(!!b.replaced && !b.restated) - Number(!!a.replaced && !a.restated) || (a.valid_from < b.valid_from ? 1 : -1))
             .slice(0, 12)
