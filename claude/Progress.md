@@ -28,6 +28,15 @@ keepline_rl (dev-selected bandit) did NOT beat default on test (−0.050 vs −0
 Chaos ladder (dev): plain collapses L0→L4 (acc .41→.16, halluc .66→.83); keepline degrades slowly.
 Pending: live Snowflake deploy (needs user approval), E's UI, final integration + demo script.
 
+## 2026-09-27 late — DEMO-READY
+- Snowflake LIVE (verified): all SQL/load/search/refresh steps succeed; 2 Cortex Search services ACTIVE;
+  row access verified (admin 506 facts vs engineering 421 with secondary roles off); stage queries in snowflake/STAGE_DEMO.md.
+  Not run: full Cortex extraction, task graph (suspended). Cortex Agent + SiS created but not exercised.
+- Web app (harbour theme): Home, Knowledge (+simulate overlay, Alex view), Review, History (commits/decisions/owners), Proof, Snowflake, ⌘K chat.
+- Headline (test, N=216): confidently wrong 22% vs 72% plain; right+cited 43% vs 36% (n=137); routing 21/21 vs 12/21; ECE 0.05 vs 0.27.
+- Docs: docs/JUDGE_QA.md, docs/HOW_IT_WORKS.md, web/README.md (presenter script).
+- Open: customer conversations (owner), rehearsal + backup recording.
+
 ## Decisions
 - Local-first engine (SQLite + BM25) mirrors Snowflake schema 1:1; Snowflake assets are the deploy target.
 - Deterministic no-LLM path for every stage; Claude/Cortex optional, disk-cached (`data/cache/llm`).
