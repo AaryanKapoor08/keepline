@@ -2,12 +2,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X, Lock } from "lucide-react";
 import { useData, getJSON, postJSON, snapshot, normQ, nearest, pname, first, fmtDate } from "@/lib/data";
-import { PageTop, Card, Quote, Avatar, EASE } from "@/components/kit";
-import { cn } from "@/components/ui";
+import { PageTop, Card, Quote, Avatar } from "@/components/kit";
+import { cn, Sheet } from "@/components/ui";
 
 const OrgFlow = dynamic(() => import("@/components/orgflow"), { ssr: false });
 
@@ -154,8 +154,7 @@ function PersonSheet({ pid, onClose }: { pid: string; onClose: () => void }) {
   const strength = (s: number) => (s >= 0.7 ? "deep" : s >= 0.4 ? "working" : "some");
   const owners = sec("suggested_owners");
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex justify-end bg-black/15" onClick={onClose}>
-      <motion.div initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 60, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} onClick={(e) => e.stopPropagation()} className="m-4 w-[640px] overflow-y-auto rounded-[28px] bg-surface2 p-5">
+    <Sheet onClose={onClose} label={p?.name ?? "Person"} className="w-[640px] overflow-y-auto p-5">
         {!d ? (
           <div className="p-6 text-muted">Loading…</div>
         ) : (
@@ -207,8 +206,7 @@ function PersonSheet({ pid, onClose }: { pid: string; onClose: () => void }) {
             </button>
           </div>
         )}
-      </motion.div>
-    </motion.div>
+    </Sheet>
   );
 }
 
@@ -218,8 +216,7 @@ function AlexSheet({ onClose }: { onClose: () => void }) {
   const SYS = /corelink|recon|ach|backup|cert|ssl|key|restart|primary|cutoff|rotat|replica/i;
   const mines = sec("Open risks").filter((x: any) => /landmine/i.test(x.type ?? "") && SYS.test(x.title ?? "")).slice(0, 5);
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex justify-end bg-black/15" onClick={onClose}>
-      <motion.div initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 60, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} onClick={(e) => e.stopPropagation()} className="m-4 w-[640px] space-y-3 overflow-y-auto rounded-[28px] bg-surface2 p-5">
+    <Sheet onClose={onClose} label="Alex Rivera" className="w-[640px] space-y-3 overflow-y-auto p-5">
         <div className="flex items-start gap-4 rounded-[20px] bg-white p-5">
           <Avatar id="alex" size={56} />
           <div className="flex-1">
@@ -237,8 +234,7 @@ function AlexSheet({ onClose }: { onClose: () => void }) {
         <Section title="Starter tasks" n={sec("Starter").length}>
           {sec("Starter").map((x: any, i: number) => <Item key={i} title={x.task} sub={x.buddy ? `buddy ${x.buddy}` : undefined} c={x.citations?.[0]} />)}
         </Section>
-      </motion.div>
-    </motion.div>
+    </Sheet>
   );
 }
 
@@ -250,14 +246,76 @@ const SIM_T = [
 const pct = (v?: number) => (v == null ? "—" : `${Math.round(v * 100)}%`);
 const md = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("en-CA", { month: "short", day: "numeric" });
 
-async function runSim(tid: string | null, text: string) {
-  const t = SIM_T.find((x) => x.id === tid && x.label === text);
-  let r = await postJSON("/project_sim", t ? { template_id: t.id } : { brief: text, weeks: 12 });
+/** POST to the live API; fall back to the precomputed snapshot (keyed "<template>" or "<template>|<scenario>"). */
+async function simFetch(body: any, key: string, valid?: (r: any) => boolean) {
+  let r = await postJSON("/project_sim", body);
+  if (r && valid && !valid(r)) r = null; // an API started before the stress test existed ignores its fields
   if (!r) {
     const all = (await snapshot("project_sims")) ?? {};
-    r = all[t?.id ?? "corelink_v3"];
+    r = all[key];
   }
   return r;
+}
+
+async function runSim(tid: string | null, text: string) {
+  const t = SIM_T.find((x) => x.id === tid && x.label === text);
+  return simFetch(t ? { template_id: t.id } : { brief: text, weeks: 12 }, t?.id ?? "corelink_v3");
+}
+
+/* Stress tests. "planned" = known HR dates (the default view). "none" = nobody leaves: only sick days, vacation
+   and ramp-up time. "none_busy" = nobody leaves, busy season (3x the absence rate). Any other value is a
+   person id: "what if they leave halfway through", on top of the known departures. */
+const BUSY_SCALE = 3; // keepline.products.project_sim.BUSY_SEASON_ABSENCE_SCALE
+const calmScen = (s: string) => s === "none" || s === "none_busy";
+
+async function stressSim(base: any, scen: string) {
+  const body: any = base.template_id ? { template_id: base.template_id } : { brief: base.brief, weeks: base.weeks };
+  const key = `${base.template_id ?? "corelink_v3"}|${scen}`;
+  if (calmScen(scen)) {
+    body.ignore_departures = true;
+    if (scen === "none_busy") body.absence_scale = BUSY_SCALE;
+    return simFetch(body, key, (r) => r.scenario?.departures === "none" && (scen === "none_busy") === (r.scenario?.absence_scale > 1));
+  }
+  body.leaves = { [scen]: Math.floor(base.weeks / 2) };
+  return simFetch(body, key, (r) => r.timeline?.some((x: any) => x.person_id === scen));
+}
+
+function StressBar({ base, scen, onPick }: { base: any; scen: string; onPick: (s: string) => void }) {
+  const leaving = new Set(base.timeline.map((x: any) => x.person_id));
+  const who = [...new Set<string>(base.options.flatMap((o: any) => o.people))].filter((p) => !leaving.has(p)).sort((a, b) => pname(a).localeCompare(pname(b)));
+  const person = scen !== "planned" && !calmScen(scen);
+  const seg = (on: boolean) => cn("h-9 rounded-full px-4 text-[13.5px] transition-colors", on ? "bg-white text-fg shadow-[0_1px_3px_rgba(0,0,0,0.12)]" : "text-muted hover:text-fg");
+  const note =
+    scen === "planned"
+      ? base.timeline.length ? `Known HR dates: ${base.timeline.map((x: any) => `${first(x.person_id)} leaves week ${x.week + 1}`).join(", ")}.` : "Nobody is scheduled to leave during the project."
+      : scen === "none"
+        ? "No departures at all. Only sick days, vacation and the time a learner needs to ramp up."
+        : scen === "none_busy"
+          ? "No departures, but three times the usual sick days and vacation."
+          : `${pname(scen)} leaves in week ${Math.floor(base.weeks / 2) + 1}, on top of the known departures.`;
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-t border-[var(--line)] px-2 pt-3">
+      <span className="text-[13px] text-muted">Stress test</span>
+      <div className="inline-flex items-center rounded-full bg-surface2 p-1">
+        <button onClick={() => onPick("planned")} className={seg(scen === "planned")}>Planned departures</button>
+        <button onClick={() => onPick("none")} className={seg(calmScen(scen))}>Nobody leaves</button>
+        <label className={cn(seg(person), "flex cursor-pointer items-center gap-1")}>
+          What if
+          <select value={person ? scen : ""} onChange={(e) => onPick(e.target.value)} aria-label="Person who leaves" className="cursor-pointer bg-transparent font-medium text-fg outline-none">
+            <option value="" disabled>someone</option>
+            {who.map((p) => <option key={p} value={p}>{first(p)}</option>)}
+          </select>
+          leaves?
+        </label>
+      </div>
+      {calmScen(scen) && (
+        <button onClick={() => onPick(scen === "none" ? "none_busy" : "none")} aria-pressed={scen === "none_busy"} className={cn("h-9 rounded-full px-3.5 text-[13px] transition-colors", scen === "none_busy" ? "bg-sig text-white" : "bg-surface2 text-muted hover:text-fg")}>
+          Busy season
+        </button>
+      )}
+      <span className="ml-auto text-[12.5px] text-muted">{note}</span>
+    </div>
+  );
 }
 
 function overlay(r: any, o: any) {
@@ -276,9 +334,15 @@ function overlay(r: any, o: any) {
   return { areas, people: [...people], tags, rules, pairs };
 }
 
-function SimResult({ r, opt, setOpt }: { r: any; opt: string; setOpt: (o: string) => void }) {
+function SimResult({ r, base, scen, opt, setOpt }: { r: any; base: any; scen: string; opt: string; setOpt: (o: string) => void }) {
   const focus = r.areas.find((a: any) => a.area_id === "corelink_api") ?? [...r.areas].sort((a: any, b: any) => a.holders.length - b.holders.length)[0];
-  const at = (o: any) => o.areas.find((a: any) => a.area_id === focus?.area_id)?.p_uncovered_at_end;
+  // Planned: the focus area at project end (the demo view). What if X leaves: any area at project end, since the
+  // plan restaffs around X and the damage can land elsewhere. Nobody leaves: nothing is lost for good, so the
+  // question becomes "does any part of the project go a week with nobody to cover it?"
+  const calm = calmScen(scen);
+  const whatIf = scen !== "planned" && !calm;
+  const at = (o: any) => (calm ? o?.p_any_uncovered : whatIf ? o?.p_uncovered_at_end : o?.areas.find((a: any) => a.area_id === focus?.area_id)?.p_uncovered_at_end);
+  const was = (o: any) => (base && r !== base ? at(base.options.find((x: any) => x.id === o.id)) : undefined);
   const bal = r.options.find((x: any) => x.id === "balanced");
   const label = (o: any) =>
     o.id === "fastest"
@@ -287,13 +351,16 @@ function SimResult({ r, opt, setOpt }: { r: any; opt: string; setOpt: (o: string
         ? `Pair ${o.areas.find((a: any) => a.learner)?.learner_name?.split(" ")[0] ?? "a learner"} this week`
         : (at(o) ?? 1) < (at(bal) ?? 1) ? "Resilient" : "Spread across team";
   return (
-    <div className="rounded-[24px] bg-sig p-6 text-white">
-      <div className="text-[15px] text-white/60">{focus?.area_name} uncovered at project end</div>
-      <div className="mt-1 text-[13px] text-white/40">across {r.runs.toLocaleString()} simulated futures</div>
+    <div className="rounded-[20px] bg-ink p-6 text-white">
+      <div className="text-[15px] text-white/60">{calm ? "A week where nobody can cover part of the project" : whatIf ? `Some part of the project uncovered at the end if ${first(scen)} leaves` : `${focus?.area_name} uncovered at project end`}</div>
+      <div className="mt-1 text-[13px] text-white/40">{calm ? (scen === "none_busy" ? "busy season, nobody leaves · " : "nobody leaves · ") : ""}across {r.runs.toLocaleString()} simulated futures</div>
       <div className="mt-5 space-y-2">
         {r.options.map((o: any) => (
-          <button key={o.id} onClick={() => setOpt(o.id)} className={cn("flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors", opt === o.id ? "bg-white text-[#111]" : "bg-white/[0.07] hover:bg-white/[0.12]")}>
-            <span className="text-[15px]">{label(o)}</span>
+          <button key={o.id} onClick={() => setOpt(o.id)} className={cn("flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors", opt === o.id ? "bg-white text-fg" : "bg-white/[0.07] hover:bg-white/[0.12]")}>
+            <span>
+              <span className="block text-[15px]">{label(o)}</span>
+              {was(o) != null && <span className="block text-[12px] opacity-60">{pct(was(o))} with planned departures</span>}
+            </span>
             <span className="text-[26px] font-medium tabular-nums">{pct(at(o))} <span className="text-[13px] font-normal opacity-60">risk</span></span>
           </button>
         ))}
@@ -303,18 +370,20 @@ function SimResult({ r, opt, setOpt }: { r: any; opt: string; setOpt: (o: string
         <div className="absolute inset-x-0 top-[11px] h-0.5 bg-white/20" />
         {r.timeline.map((x: any) => (
           <div key={x.person_id} className="absolute top-0 -translate-x-1/2" style={{ left: `${Math.min(96, Math.max(4, ((x.week + 0.5) / r.weeks) * 100))}%` }}>
-            <span className="block h-6 w-0.5 bg-alarm" />
+            <span className={cn("block h-6 w-0.5", x.forced ? "bg-white" : "bg-alarm")} />
           </div>
         ))}
       </div>
       <div className="mt-1 flex flex-wrap gap-x-3 text-[12px] text-white/60">
-        {r.timeline.map((x: any) => <span key={x.person_id}>{first(x.person_id)} wk {x.week + 1}</span>)}
+        {r.timeline.map((x: any) => <span key={x.person_id}>{first(x.person_id)} wk {x.week + 1}{x.forced ? " (what if)" : ""}</span>)}
+        {!r.timeline.length && <span>No one leaves during the project</span>}
       </div>
     </div>
   );
 }
 
-function SimDetails({ o }: { o: any }) {
+function SimDetails({ r, o, scen }: { r: any; o: any; scen: string }) {
+  if (calmScen(scen)) return <ThinDetails r={r} o={o} />;
   const lack = o.areas.filter((a: any) => a.p_uncovered_at_end >= 0.15);
   const strong = o.areas.filter((a: any) => a.p_uncovered_at_end < 0.15).sort((a: any, b: any) => a.p_uncovered_at_end - b.p_uncovered_at_end);
   const lose: Record<string, any[]> = {};
@@ -340,10 +409,33 @@ function SimDetails({ o }: { o: any }) {
   );
 }
 
+/** Nobody leaves: where the project is thin on coverage alone, and who to pair before it starts. */
+function ThinDetails({ r, o }: { r: any; o: any }) {
+  const bal = r.options.find((x: any) => x.id === "balanced");
+  const pair = (id: string) => o.areas.find((a: any) => a.area_id === id)?.learner_name ?? bal?.areas.find((a: any) => a.area_id === id)?.learner_name;
+  const thin = (a: any) => (a.holders.length <= 1 && !a.reviewer) || a.p_uncovered >= 0.15;
+  const row = "border-b border-[var(--line)] py-2.5 text-[14px] last:border-0";
+  const cards: { t: string; body: React.ReactNode }[] = [];
+  const weak = o.areas.filter(thin);
+  const ok = o.areas.filter((a: any) => !thin(a));
+  if (weak.length)
+    cards.push({ t: "Where it's thin", body: weak.map((a: any) => (
+      <div key={a.area_id} className={row}><span className="text-alarm">{a.area_name}</span><div className="text-[12.5px] text-muted">{a.holders.length <= 1 ? `only ${a.lead_name ?? "nobody"} knows it` : `${a.lead_name} leads`} · {pct(a.p_uncovered)} chance of a week with nobody to cover it{pair(a.area_id) ? ` · pair ${pair(a.area_id)} before it starts` : ""}</div></div>
+    )) });
+  if (ok.length)
+    cards.push({ t: "Where it holds", body: ok.map((a: any) => (
+      <div key={a.area_id} className={row}>{a.area_name}<div className="text-[12.5px] text-muted">{a.holders.length} people know it{a.reviewer_name ? ` · ${a.reviewer_name} reviews` : ""} · {pct(a.p_uncovered)} chance of a gap week</div></div>
+    )) });
+  return (
+    <div className={cn("mt-4 grid gap-4", cards.length === 2 ? "grid-cols-2" : "grid-cols-1")}>
+      {cards.map((c) => <Card key={c.t} title={c.t}>{c.body}</Card>)}
+    </div>
+  );
+}
+
 function RulesSheet({ area, rules, onClose }: { area: string; rules: any[]; onClose: () => void }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] flex justify-end bg-black/15" onClick={onClose}>
-      <motion.div initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 60, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} onClick={(e) => e.stopPropagation()} className="m-4 w-[560px] space-y-3 overflow-y-auto rounded-[28px] bg-surface2 p-5">
+    <Sheet onClose={onClose} label={`${area} rules`} className="w-[560px] space-y-3 overflow-y-auto p-5">
         <div className="flex items-center justify-between rounded-[20px] bg-white p-5">
           <div>
             <div className="text-[13px] text-alarm">What this change could break</div>
@@ -357,8 +449,7 @@ function RulesSheet({ area, rules, onClose }: { area: string; rules: any[]; onCl
             <div className="mt-2 rounded-[14px] bg-surface2 p-3"><Quote c={r} small /></div>
           </div>
         ))}
-      </motion.div>
-    </motion.div>
+    </Sheet>
   );
 }
 
@@ -371,13 +462,32 @@ export default function KnowledgePage() {
   const [tid, setTid] = useState<string | null>("corelink_v3");
   const [text, setText] = useState(SIM_T[0].label);
   const [r, setR] = useState<any>(null);
+  const [base, setBase] = useState<any>(null); // planned-departures result: the reference for stress tests
+  const [scen, setScen] = useState("planned"); // picked in the stress bar
+  const [rScen, setRScen] = useState("planned"); // scenario of the result on screen
+  const req = useRef(0);
   const [opt, setOpt] = useState("fastest");
   const [details, setDetails] = useState(false);
   const [ruleArea, setRuleArea] = useState<string | null>(null);
   const run = async (t = tid, x = text) => {
+    const n = ++req.current;
     const res = await runSim(t, x);
+    if (n !== req.current) return;
     setR(res);
+    setBase(res);
+    setScen("planned");
+    setRScen("planned");
     setOpt("fastest");
+  };
+  const stress = async (s: string) => {
+    if (!base) return;
+    setScen(s);
+    const n = ++req.current;
+    const res = s === "planned" ? base : await stressSim(base, s);
+    if (n === req.current && res) {
+      setR(res);
+      setRScen(s);
+    }
   };
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
@@ -394,7 +504,7 @@ export default function KnowledgePage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const o = r?.options?.find((x: any) => x.id === opt);
   const ov = r && o ? overlay(r, o) : null;
-  const clear = () => { setR(null); setSimOpen(false); setDetails(false); };
+  const clear = () => { req.current++; setR(null); setBase(null); setScen("planned"); setRScen("planned"); setSimOpen(false); setDetails(false); };
   const ruleData = ruleArea ? r?.areas?.find((a: any) => a.area_id === ruleArea) : null;
   return (
     <>
@@ -406,12 +516,15 @@ export default function KnowledgePage() {
       />
       <AnimatePresence>
         {simOpen && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-4 flex items-center gap-3 rounded-[22px] bg-white p-3">
-            <input value={text} onChange={(e) => { setText(e.target.value); setTid(SIM_T.find((t) => t.label === e.target.value)?.id ?? null); }} className="h-12 flex-1 rounded-full bg-surface2 px-5 text-[16px] outline-none focus:ring-2 focus:ring-[var(--sig-tint)]" />
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-4 space-y-3 rounded-[22px] bg-white p-3">
+            <div className="flex items-center gap-3">
+            <input value={text} onChange={(e) => { setText(e.target.value); setTid(SIM_T.find((t) => t.label === e.target.value)?.id ?? null); }} className="h-12 flex-1 rounded-full bg-surface2 px-5 text-[16px] outline-none focus:ring-2 focus:ring-black/15" />
             {SIM_T.slice(1).map((t) => (
               <button key={t.id} onClick={() => { setTid(t.id); setText(t.label); run(t.id, t.label); }} className="h-10 rounded-full bg-surface2 px-4 text-[13.5px] hover:bg-surface3">{t.short}</button>
             ))}
             <button onClick={() => run()} className="btn-primary !h-12">Run</button>
+            </div>
+            {base && <StressBar base={base} scen={scen} onPick={stress} />}
           </motion.div>
         )}
       </AnimatePresence>
@@ -435,13 +548,13 @@ export default function KnowledgePage() {
         </Card>
         {ov && (
           <div className="space-y-3">
-            <SimResult r={r} opt={opt} setOpt={setOpt} />
+            <SimResult r={r} base={base} scen={rScen} opt={opt} setOpt={setOpt} />
             <button onClick={() => setDetails(!details)} className="inline-flex h-10 items-center rounded-full border border-[var(--line)] bg-white px-4 text-[14px]">{details ? "Hide details" : "Details"} <span className="ml-1">›</span></button>
             <div className="text-[12.5px] leading-relaxed text-muted">A recommendation for a manager to approve. Uses who knows what and HR dates only; never performance.</div>
           </div>
         )}
       </div>
-      {ov && details && <SimDetails o={o} />}
+      {ov && details && <SimDetails r={r} o={o} scen={rScen} />}
       <AnimatePresence>
         {sel && <PersonSheet pid={sel} onClose={() => setSel(null)} />}
         {alex && !sel && <AlexSheet onClose={() => setAlex(false)} />}

@@ -620,13 +620,15 @@ def get_review(pid: str) -> dict[str, Any]:
             "commits": [_commit(f) for f in facts[:8]], "issues": get_profile(pid).get("gaps", [])}
 
 
-def do_project_sim(template_id: str | None, brief: str | None, weeks: int | None, leaves: dict[str, int] | None) -> dict[str, Any]:
+def do_project_sim(template_id: str | None, brief: str | None, weeks: int | None, leaves: dict[str, int] | None,
+                   ignore_departures: bool = False, absence_scale: float = 1.0) -> dict[str, Any]:
     from keepline.products.project_sim import TEMPLATES, simulate_project
 
     t = next((x for x in TEMPLATES if x["id"] == template_id), None)
     b = brief or (t["brief"] if t else TEMPLATES[0]["brief"])
     w = weeks or (t["weeks"] if t else 12)
-    r = simulate_project(store(), b, TODAY, weeks=w, leaves=leaves or None)
+    r = simulate_project(store(), b, TODAY, weeks=w, leaves=leaves or None, ignore_departures=ignore_departures,
+                         absence_scale=max(0.0, min(10.0, absence_scale)))
     r["template_id"] = t["id"] if t else None
     return r
 
@@ -636,6 +638,8 @@ class SimIn(BaseModel):
     brief: str | None = None
     weeks: int | None = None
     leaves: dict[str, int] | None = None
+    ignore_departures: bool = False  # "nobody leaves" stress test: drop known HR departure dates
+    absence_scale: float = 1.0  # multiplier on the everyday absence rate
 
 
 @app.get("/history/latest")
@@ -667,7 +671,7 @@ async def sim_templates() -> list[dict[str, Any]]:
 
 @app.post("/project_sim")
 async def project_sim(body: SimIn) -> dict[str, Any]:
-    return do_project_sim(body.template_id, body.brief, body.weeks, body.leaves)
+    return do_project_sim(body.template_id, body.brief, body.weeks, body.leaves, body.ignore_departures, body.absence_scale)
 
 
 # ----------------------------------------------------------------------------------------------- review queue (PR per item)

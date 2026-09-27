@@ -62,7 +62,7 @@ def main() -> None:
     dump("ledger_decisions", S.get_decisions)
     dump("ledger_owners", S.get_owners)
     dump("chat_canned", lambda: {S._norm_q(q): S.do_chat([{"role": "user", "content": q}], "alex") for q in S.CHAT_DEMO})
-    from keepline.products.project_sim import TEMPLATES
+    from keepline.products.project_sim import BUSY_SEASON_ABSENCE_SCALE, TEMPLATES
 
     dump("sim_templates", lambda: TEMPLATES)
     sims = {}
@@ -72,6 +72,10 @@ def main() -> None:
         people = sorted({p for o in base["options"] for p in o["people"]})
         for p in people:
             sims[f'{t["id"]}|{p}'] = S.do_project_sim(t["id"], None, None, {p: t["weeks"] // 2})
+        # stress tests with nobody leaving: everyday absence and ramp-up only, then a 3x "busy season"
+        sims[f'{t["id"]}|none'] = S.do_project_sim(t["id"], None, None, None, ignore_departures=True)
+        sims[f'{t["id"]}|none_busy'] = S.do_project_sim(t["id"], None, None, None, ignore_departures=True,
+                                                        absence_scale=BUSY_SEASON_ABSENCE_SCALE)
     dump("project_sims", lambda: sims)
     for name in ("benchmark_dev", "benchmark_test", "reward_curve", "bandit", "training_log", "robustness"):
         dump(name, lambda name=name: S.get_result(name))

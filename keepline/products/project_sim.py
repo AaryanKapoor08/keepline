@@ -54,6 +54,7 @@ OPTIONS = {
 }
 
 UNPLANNED_ABSENCE_PER_MONTH = 0.03  # same for everyone: illness, family leave, vacation clusters
+BUSY_SEASON_ABSENCE_SCALE = 3.0  # "busy season" stress level: three times the everyday absence rate
 TRANSFER_WEEKS = 4  # weeks a learner must work alongside an available holder before they can cover the area
 TRANSFER_SUCCESS = 0.8  # even with enough overlap, a transfer sometimes does not stick
 SELF_STUDY_WEEKS = 6  # with no holder around, a learner can ramp from the captured receipts instead...
@@ -139,10 +140,10 @@ def _staff(option: str, areas: list[_Area], departures: dict[str, int | None], w
 
 
 def _simulate(areas: list[_Area], plan: dict[str, dict[str, Any]], departures: dict[str, int | None], weeks: int,
-              runs: int, seed: int) -> dict[str, Any]:
+              runs: int, seed: int, absence_per_month: float = UNPLANNED_ABSENCE_PER_MONTH) -> dict[str, Any]:
     rng = random.Random(seed)
     people = sorted({p for v in plan.values() for p in v.values() if p})
-    p_absent = 1 - (1 - UNPLANNED_ABSENCE_PER_MONTH) ** (weeks / 4.33)
+    p_absent = 1 - (1 - absence_per_month) ** (weeks / 4.33)
     any_gap = 0
     end_gap = 0
     total_gap_weeks = 0
@@ -210,16 +211,24 @@ def _simulate(areas: list[_Area], plan: dict[str, dict[str, Any]], departures: d
 
 
 def simulate_project(store: StoreLike, brief: str, today: date, *, weeks: int = 12, start: date | None = None,
-                     leaves: dict[str, int] | None = None, runs: int = 2000, seed: int = 7) -> dict[str, Any]:
+                     leaves: dict[str, int] | None = None, ignore_departures: bool = False,
+                     absence_scale: float = 1.0, runs: int = 2000, seed: int = 7) -> dict[str, Any]:
     """Staffing options + Monte Carlo knowledge-coverage risk for a project brief.
 
     ``leaves`` = {person_id: week} forces an extra departure mid-project (the "what if X leaves" toggle).
+    ``ignore_departures`` drops every known HR departure date: the "nobody leaves" stress test, where the only
+    disruption is everyday absence (sick days, vacation) and the time a learner needs to ramp up. It shows where a
+    project is thin on coverage alone. ``leaves`` still applies on top of it.
+    ``absence_scale`` multiplies the everyday absence rate (e.g. ``BUSY_SEASON_ABSENCE_SCALE``).
+    Defaults reproduce the planned-departures view exactly.
     """
     start = start or today
     people = people_by_id(store)
     touched = areas_in_brief(store, brief)
     areas = _areas(store, list(touched))
-    departures: dict[str, int | None] = {pid: _weeks_until(p.departure_date, start) for pid, p in people.items()}
+    absence = UNPLANNED_ABSENCE_PER_MONTH * absence_scale
+    departures: dict[str, int | None] = {pid: None if ignore_departures else _weeks_until(p.departure_date, start)
+                                         for pid, p in people.items()}
     for pid, w in (leaves or {}).items():
         departures[pid] = w if departures.get(pid) is None else min(departures[pid], w)  # type: ignore[type-var]
     end = start + timedelta(weeks=weeks)
@@ -234,7 +243,7 @@ def simulate_project(store: StoreLike, brief: str, today: date, *, weeks: int = 
     options = []
     for opt in OPTIONS:
         plan = _staff(opt, areas, departures, weeks)
-        sim = _simulate(areas, plan, departures, weeks, runs, seed)
+        sim = _simulate(areas, plan, departures, weeks, runs, seed, absence)
         load: dict[str, int] = {}
         for v in plan.values():
             for p in v.values():
@@ -278,8 +287,10 @@ def simulate_project(store: StoreLike, brief: str, today: date, *, weeks: int = 
                    "documented": round(a.documented, 2), "rules": a.rules} for a in areas],
         "dependents": sorted({h for a in areas for h in a.holders}),
         "timeline": timeline, "options": options, "recommended": best["id"], "runs": runs, "seed": seed,
+        "scenario": {"departures": "none" if ignore_departures else "planned", "forced": sorted(leaves or {}),
+                     "absence_scale": absence_scale},
         "assumptions": {
-            "unplanned_absence_per_month": UNPLANNED_ABSENCE_PER_MONTH, "transfer_weeks": TRANSFER_WEEKS,
+            "unplanned_absence_per_month": round(absence, 4), "transfer_weeks": TRANSFER_WEEKS,
             "transfer_success": TRANSFER_SUCCESS, "self_study_weeks": SELF_STUDY_WEEKS, "self_study_max": SELF_STUDY_MAX,
             "note": "Recommendations for a manager to approve. Uses evidence of who knows what and HR dates only; "
                     "never individual performance.",
