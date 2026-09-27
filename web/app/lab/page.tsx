@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
-import { useData } from "@/lib/data";
+import { useData, cssVar } from "@/lib/data";
 import { PageTop, Card, Details, Fade, EASE } from "@/components/kit";
 import type { FlowNode, FlowEdge } from "@/components/flow";
 
@@ -68,20 +68,20 @@ export default function LabPage() {
             const k = val(S?.keepline?.[row.k]) ?? 0;
             const p = val(S?.plain?.[row.k]) ?? 0;
             return (
-              <div key={row.k} className="border-b border-[#ececec] py-4 last:border-0">
+              <div key={row.k} className="border-b border-[var(--line)] py-4 last:border-0">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[16px]">{row.l}</span>
                   <span className="text-[12px] text-muted">n={nn(S?.keepline?.[row.k]) ?? "—"}</span>
                 </div>
                 <div className="mt-2 flex items-center gap-3">
                   <span className="w-[74px] text-[30px] font-medium tracking-[-0.02em]">{pct(k)}</span>
-                  <div className="h-3 flex-1 rounded-full bg-[#f4f5f7]">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${k * 100}%` }} transition={{ duration: 0.9, delay: i * 0.1, ease: EASE }} className="h-3 rounded-full bg-[#111]" />
+                  <div className="h-3 flex-1 rounded-full bg-surface2">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${k * 100}%` }} transition={{ duration: 0.9, delay: i * 0.1, ease: EASE }} className="h-3 rounded-full bg-sig" />
                   </div>
                 </div>
                 <div className="mt-1.5 flex items-center gap-3">
                   <span className="w-[74px] text-[15px] text-muted">{pct(p)}</span>
-                  <div className="h-3 flex-1 rounded-full bg-[#f4f5f7]">
+                  <div className="h-3 flex-1 rounded-full bg-surface2">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${p * 100}%` }} transition={{ duration: 0.9, delay: i * 0.1 + 0.1, ease: EASE }} className="hatch h-3 rounded-full" />
                   </div>
                 </div>
@@ -89,14 +89,14 @@ export default function LabPage() {
             );
           })}
           <div className="mt-3 flex gap-4 text-[12px] text-muted">
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-[#111]" /> Keepline</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-sig" /> Keepline</span>
             <span className="flex items-center gap-1.5"><span className="hatch h-2.5 w-2.5 rounded-full" /> Plain search</span>
             <span>Held-out test split, run once.</span>
           </div>
-          <Fade show={noise} className="mt-4 rounded-[18px] bg-[#f4f5f7] p-4">
+          <Fade show={noise} className="mt-4 rounded-[18px] bg-surface2 p-4">
             <div className="flex items-center gap-3 text-[13px] text-muted">
               Clean
-              <input type="range" min={0} max={Math.max(0, levels.length - 1)} value={lvl} onChange={(e) => setLvl(Number(e.target.value))} className="flex-1 accent-[#111]" />
+              <input type="range" min={0} max={Math.max(0, levels.length - 1)} value={lvl} onChange={(e) => setLvl(Number(e.target.value))} className="flex-1 accent-[var(--sig)]" />
               Brutal
             </div>
             <div className="mt-3 flex items-baseline gap-6">
@@ -108,17 +108,17 @@ export default function LabPage() {
         </Card>
 
         <Card title="Training reward" right={<span className="text-[13px] text-muted">bandit (black) vs fixed default (gray)</span>}>
-          <div className="h-[260px] rounded-[18px] bg-[#f4f5f7] p-3">
+          <div className="h-[260px] rounded-[18px] bg-surface2 p-3">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={t === null ? series : shown} margin={{ top: 8, right: 8, left: -24, bottom: -8 }}>
                 <XAxis dataKey="i" hide type="number" domain={[0, Math.max(1, series.length - 1)]} />
                 <YAxis domain={[-1, 1.2]} tick={{ fontSize: 11, fill: "#8e8e93" }} axisLine={false} tickLine={false} />
                 <Line dataKey="def" stroke="#c7c7cc" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-                <Line dataKey="bandit" stroke="#111" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                <Line dataKey="bandit" stroke={cssVar("--sig", "#1D4ED8")} strokeWidth={1.5} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-4 rounded-[18px] bg-[#f4f5f7] p-4 text-[14px] leading-relaxed text-muted">
+          <div className="mt-4 rounded-[18px] bg-surface2 p-4 text-[14px] leading-relaxed text-muted">
             +1 for a cited answer, +0.5 for a correct &ldquo;ask someone&rdquo;, −2 for a confident wrong answer. Honest result: with 388 training questions, the learned thresholds did not beat the calibrated default on the test split. More real usage will tune them.
           </div>
         </Card>

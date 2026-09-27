@@ -127,3 +127,9 @@ export const fmtDate = (s?: string | null) =>
 
 export const riskColor = (r: number) => (r >= 0.35 ? "#ff3b30" : r >= 0.15 ? "#1d1d1f" : "#86868b");
 export const riskLevel = (r: number) => (r >= 0.6 ? "Critical" : r >= 0.35 ? "High" : r >= 0.15 ? "Elevated" : "Low");
+
+/** Current value of a theme token (for SVG attributes and chart libs that can't read CSS variables). */
+export function cssVar(name: string, fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}

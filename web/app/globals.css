@@ -1,24 +1,72 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #ffffff;
-  --bg-2: #f4f5f7;
-  --panel: #ffffff;
-  --line: #ececec;
-  --line-2: #d9d9de;
-  --fg: #111111;
-  --muted: #6e6e73;
-  --dim: #8e8e93;
-  --accent: #111111;
-  --accent-2: #111111;
-  --alarm: #d93025;
-  --warn: #6e6e73;
-  --ok: #1f9d55;
+:root, :root[data-theme="harbour"] {
+  --outer: #EAE6DD;
+  --canvas: #F5F3EE;
+  --surface-2: #F3F0EA;
+  --surface-3: #EBE7DF;
+  --flow: #FAF8F4;
+  --fg: #15171C;
+  --muted: #6B6F76;
+  --dim: #8C8F95;
+  --line: #E7E3DA;
+  --line-2: #E7E3DA;
+  --sig: #1D4ED8;
+  --sig-deep: #1E40AF;
+  --sig-tint: #E9EFFC;
+  --accent: #1D4ED8;
+  --alarm: #E5484D;
+  --alarm-tint: #FDECEC;
 }
+:root[data-theme="evergreen"] {
+  --outer: #E7E9E1;
+  --canvas: #F3F4EE;
+  --surface-2: #F1F2EC;
+  --surface-3: #E8EAE2;
+  --flow: #F8F9F5;
+  --fg: #14171A;
+  --muted: #6A6F6C;
+  --dim: #8A8F8C;
+  --line: #E3E5DC;
+  --line-2: #E3E5DC;
+  --sig: #1F5C45;
+  --sig-deep: #184A37;
+  --sig-tint: #E4EFE8;
+  --accent: #1F5C45;
+  --alarm: #D4553B;
+  --alarm-tint: #FBEAE5;
+}
+:root[data-theme="violet"] {
+  --outer: #E9E9EE;
+  --canvas: #F4F4F6;
+  --surface-2: #F2F2F5;
+  --surface-3: #E9E9EF;
+  --flow: #F9F9FB;
+  --fg: #16161D;
+  --muted: #6C6C78;
+  --dim: #8C8C96;
+  --line: #E6E6EC;
+  --line-2: #E6E6EC;
+  --sig: #5B4FE9;
+  --sig-deep: #4B3FD6;
+  --sig-tint: #EEEDFD;
+  --accent: #5B4FE9;
+  --alarm: #E5484D;
+  --alarm-tint: #FDECEC;
+}
+:root { --bg: #ffffff; --panel: #ffffff; --warn: var(--muted); --ok: #1f9d55; }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-bg2: var(--bg-2);
+  --color-bg2: var(--surface-2);
+  --color-sig: var(--sig);
+  --color-sigdeep: var(--sig-deep);
+  --color-sigtint: var(--sig-tint);
+  --color-surface2: var(--surface-2);
+  --color-surface3: var(--surface-3);
+  --color-outer: var(--outer);
+  --color-canvas: var(--canvas);
+  --color-alarmtint: var(--alarm-tint);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-dim: var(--dim);
@@ -34,7 +82,7 @@
 
 html,
 body {
-  background: #e9eaed;
+  background: var(--outer);
   font-size: 16px;
   color: var(--fg);
   font-family: var(--font-hanken), "Helvetica Neue", Arial, sans-serif;
@@ -43,7 +91,7 @@ body {
 }
 
 body {
-  background: #e9eaed;
+  background: var(--outer);
   font-size: 16px;
   font-feature-settings: "tnum" 1, "cv11" 1;
   min-height: 100vh;
@@ -131,10 +179,12 @@ input[type="range"] { accent-color: var(--accent); }
 .pill-outline { border:1px solid #0071e3; color:#0071e3; } .pill-outline:hover { background:#0071e3; color:#fff; }
 .dark-section .pill-outline { border-color:#2997ff; color:#2997ff; }
 
-.btn-primary { display:inline-flex; align-items:center; gap:8px; height:52px; padding:0 26px; border-radius:999px; background:#111; color:#fff; font-size:16px; font-weight:500; transition: background .2s; }
-.btn-primary:hover { background:#2a2a2a; }
+.btn-primary { display:inline-flex; align-items:center; gap:8px; height:52px; padding:0 26px; border-radius:999px; background:var(--sig); color:#fff; font-size:16px; font-weight:500; transition: background .2s; }
+.btn-primary:hover { background:var(--sig-deep); }
 .btn-primary:disabled { opacity:.5; }
-.hatch { background: repeating-linear-gradient(135deg, #e3e4e8 0 2px, #f4f5f7 2px 7px); }
+.hatch { background: repeating-linear-gradient(135deg, var(--line) 0 2px, var(--surface-2) 2px 7px); }
 .react-flow__controls { box-shadow:none !important; border-radius:12px; overflow:hidden; border:1px solid #ececec; }
 .react-flow__controls-button { background:#fff !important; border-bottom:1px solid #ececec !important; }
 .react-flow__edge-textbg { fill:#f4f5f7; }
+
+.shadow-card { box-shadow: 0 1px 2px rgba(16,24,40,.04), 0 1px 1px rgba(16,24,40,.03); }

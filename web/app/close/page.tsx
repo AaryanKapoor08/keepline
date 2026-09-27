@@ -49,7 +49,7 @@ export default function ClosePage() {
       <PageTop title="Built on Snowflake. Private by design." action={t === null ? "Execute workflow" : "Run again"} onAction={() => setT(0)} />
       <Card title="How Keepline works" right={<span className="text-[13px] text-muted">runs inside your Snowflake account</span>}>
         <Flow nodes={nodes} edges={edges} height={420} />
-        <Fade show={done} className="mt-4 flex items-center justify-between rounded-[18px] bg-[#f4f5f7] px-5 py-4">
+        <Fade show={done} className="mt-4 flex items-center justify-between rounded-[18px] bg-surface2 px-5 py-4">
           <div className="text-[15px] text-muted">Which days does the recon job skip?</div>
           <div className="text-[17px] font-medium">The 1st and the 15th. Sarah Chen, Aug 31.</div>
         </Fade>

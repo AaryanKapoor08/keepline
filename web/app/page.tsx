@@ -28,7 +28,7 @@ export default function Home() {
       <div className="grid grid-cols-[1.2fr_1fr_1fr] gap-4">
         <Card title="Upcoming departures" right={<Details href="/graph">Knowledge map</Details>}>
           {leaving.map((p, i) => (
-            <Link key={p.id} href={`/graph?person=${p.id}`} className={cn("flex items-center gap-3 border-b border-[#ececec] py-3 last:border-0", i === 0 && "")}>
+            <Link key={p.id} href={`/graph?person=${p.id}`} className={cn("flex items-center gap-3 border-b border-[var(--line)] py-3 last:border-0", i === 0 && "")}>
               <Avatar id={p.id} size={40} />
               <div className="flex-1">
                 <div className="text-[16px] font-medium">{p.name}</div>
@@ -59,7 +59,7 @@ export default function Home() {
 
         <Card title="Most at risk" right={<Details href="/graph?simulate=corelink_v3">Simulate</Details>}>
           {top.map((r) => (
-            <div key={r.area_id} className="flex items-center justify-between border-b border-[#ececec] py-3 last:border-0">
+            <div key={r.area_id} className="flex items-center justify-between border-b border-[var(--line)] py-3 last:border-0">
               <div>
                 <div className="text-[15px]">{r.area_name}</div>
                 <div className="text-[12.5px] text-muted">{r.bus_factor <= 1 ? `only ${r.at_risk_person_id ? r.at_risk_person_id[0].toUpperCase() + r.at_risk_person_id.slice(1) : "one person"}` : `${r.bus_factor} people`} · leaves in {r.countdown_days ?? "—"} days</div>
@@ -73,19 +73,19 @@ export default function Home() {
       <div className="mt-4 grid grid-cols-[1.4fr_1fr_1fr] gap-4">
         <Card title="Latest changes" right={<Details href="/history">History</Details>}>
           {(latest ?? []).map((c: any) => (
-            <div key={c.sha} className="flex items-start gap-3 border-b border-[#ececec] py-3 last:border-0">
+            <div key={c.sha} className="flex items-start gap-3 border-b border-[var(--line)] py-3 last:border-0">
               <span className="mt-0.5 font-mono text-[12.5px] text-muted">{c.sha}</span>
               <div className="flex-1">
                 <div className="text-[14.5px] leading-snug">{c.message}</div>
                 <div className="text-[12.5px] text-muted">{c.author_name} · {fmtDate(c.valid_from)}</div>
               </div>
-              {c.supersedes && <span className="rounded-full bg-[#f4f5f7] px-2.5 py-1 text-[12px]">replaces a fact</span>}
+              {c.supersedes && <span className="rounded-full bg-surface2 px-2.5 py-1 text-[12px]">replaces a fact</span>}
             </div>
           ))}
         </Card>
         <Card title="Joining" right={<Details href="/graph?as=alex">Onboard</Details>}>
           {joining.map((p) => (
-            <div key={p.id} className="flex items-center gap-3 rounded-[16px] bg-[#f4f5f7] p-4">
+            <div key={p.id} className="flex items-center gap-3 rounded-[16px] bg-surface2 p-4">
               <Avatar id={p.id} size={44} />
               <div>
                 <div className="text-[16px] font-medium">{p.name}</div>
@@ -99,7 +99,7 @@ export default function Home() {
           <Big value={people.length || "—"} caption={`people · ${Object.keys(teams).length} teams`} />
           <div className="mt-4 flex flex-wrap gap-2">
             {Object.entries(teams).map(([t, n]) => (
-              <span key={t} className="rounded-full bg-[#f4f5f7] px-3 py-1.5 text-[13px]">{TEAM_LABEL[t] ?? t} <span className="text-muted">{n}</span></span>
+              <span key={t} className="rounded-full bg-surface2 px-3 py-1.5 text-[13px]">{TEAM_LABEL[t] ?? t} <span className="text-muted">{n}</span></span>
             ))}
           </div>
         </Card>

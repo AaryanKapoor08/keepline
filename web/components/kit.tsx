@@ -51,7 +51,7 @@ export function PageTop({ title, action, onAction, actionHref, sub, chips, right
 
 export function Chip({ children, icon: I, onClick, active }: { children: React.ReactNode; icon?: any; onClick?: () => void; active?: boolean }) {
   return (
-    <button onClick={onClick} className={cn("flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors", active ? "bg-[#111] text-white" : "bg-white text-fg hover:bg-white/70")}>
+    <button onClick={onClick} className={cn("flex h-11 items-center gap-2 rounded-full px-4 text-[14px] transition-colors", active ? "bg-sig text-white" : "bg-white text-fg hover:bg-white/70")}>
       {I && <I className="h-4 w-4" strokeWidth={1.6} />}
       {children}
     </button>
@@ -64,7 +64,7 @@ export function Card({ title, right, children, className, dark, delay = 0 }: { t
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, delay, ease: EASE }}
-      className={cn("flex flex-col rounded-[24px] p-6", dark ? "bg-[#111] text-white" : "bg-white", className)}
+      className={cn("flex flex-col rounded-[24px] p-6", dark ? "bg-sig text-white" : "bg-white shadow-card", className)}
     >
       {(title || right) && (
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -78,7 +78,7 @@ export function Card({ title, right, children, className, dark, delay = 0 }: { t
 }
 
 export function Details({ children = "View details", onClick, href, dark, open }: { children?: React.ReactNode; onClick?: () => void; href?: string; dark?: boolean; open?: boolean }) {
-  const cls = cn("inline-flex h-9 items-center gap-1 rounded-full border px-3.5 text-[13px] transition-colors", dark ? "border-white/20 text-white hover:bg-white/10" : "border-[#e5e5ea] bg-white text-fg hover:bg-[#f4f5f7]");
+  const cls = cn("inline-flex h-9 items-center gap-1 rounded-full border px-3.5 text-[13px] transition-colors", dark ? "border-white/20 text-white hover:bg-white/10" : "border-[var(--line)] bg-white text-fg hover:bg-surface2");
   const inner = (
     <>
       {children} <ChevronRight className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-90")} />
@@ -103,7 +103,7 @@ export function Big({ value, unit, caption, red, dark }: { value: React.ReactNod
 export function Bars({ items, height = 150 }: { items: { label: string; value: number; strong?: boolean; red?: boolean }[]; height?: number }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
-    <div className="flex items-end gap-2 rounded-[18px] bg-[#f4f5f7] p-3" style={{ height: height + 56 }}>
+    <div className="flex items-end gap-2 rounded-[18px] bg-surface2 p-3" style={{ height: height + 56 }}>
       {items.map((it, i) => (
         <div key={it.label} className="flex flex-1 flex-col justify-end">
           <div className="mb-2 text-[14px] font-medium tabular-nums">{it.value}</div>
@@ -111,7 +111,7 @@ export function Bars({ items, height = 150 }: { items: { label: string; value: n
             initial={{ height: 0 }}
             animate={{ height: Math.max(8, (it.value / max) * height) }}
             transition={{ duration: 0.8, delay: 0.1 * i, ease: EASE }}
-            className={cn("rounded-[12px]", it.red ? "bg-alarm" : it.strong ? "bg-[#111]" : "hatch")}
+            className={cn("rounded-[12px]", it.red ? "bg-alarm" : it.strong ? "bg-sig" : "hatch")}
           />
           <div className="mt-2 truncate text-[12px] text-muted">{it.label}</div>
         </div>
@@ -123,7 +123,7 @@ export function Bars({ items, height = 150 }: { items: { label: string; value: n
 export function Row({ label, value, children, strong }: { label: React.ReactNode; value?: React.ReactNode; children?: React.ReactNode; strong?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-[#ececec] last:border-0">
+    <div className="border-b border-[var(--line)] last:border-0">
       <button onClick={() => children && setOpen(!open)} className="flex w-full items-center gap-2 py-3.5 text-left text-[16px]">
         {children ? <span className={cn("text-[11px] transition-transform", open && "rotate-90")}>▶</span> : <span className="w-[11px]" />}
         <span className={cn("flex-1", strong && "font-medium")}>{label}</span>
@@ -142,7 +142,7 @@ export function Row({ label, value, children, strong }: { label: React.ReactNode
 
 export function Avatar({ id, size = 40, dark }: { id: string; size?: number; dark?: boolean }) {
   return (
-    <span className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-medium", dark ? "bg-white text-[#111]" : "bg-[#111] text-white")} style={{ width: size, height: size, fontSize: size * 0.36 }}>
+    <span className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-medium", dark ? "bg-white text-[#111]" : "bg-sig text-white")} style={{ width: size, height: size, fontSize: size * 0.36 }}>
       {pname(id).split(" ").map((x) => x[0]).join("").slice(0, 2)}
     </span>
   );
@@ -150,7 +150,7 @@ export function Avatar({ id, size = 40, dark }: { id: string; size?: number; dar
 
 export function PersonPill({ id, note }: { id: string; note?: string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-[#f4f5f7] py-1 pl-1 pr-4 text-[14px]">
+    <span className="inline-flex items-center gap-2 rounded-full bg-surface2 py-1 pl-1 pr-4 text-[14px]">
       <Avatar id={id} size={28} />
       {pname(id)}
       {note && <span className="text-muted">· {note}</span>}

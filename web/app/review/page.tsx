@@ -45,7 +45,7 @@ function Source({ src, quote }: { src: any; quote: string }) {
     <div className="text-[14px]">
       <div className="mb-2 flex items-center gap-1.5 text-[13px] text-muted"><Ticket className="h-3.5 w-3.5" strokeWidth={1.6} />{src.container} · {src.status}</div>
       <div className="font-medium">{src.title?.replace(/^\[[^\]]+\]\s*/, "")}</div>
-      <div className="mt-2 rounded-[12px] bg-[#f4f5f7] p-3 leading-snug">
+      <div className="mt-2 rounded-[12px] bg-surface2 p-3 leading-snug">
         <span className="text-[12.5px] text-muted">{src.author_name} commented · {fmtDate(src.timestamp)}</span>
         <div>{quote || src.text}</div>
       </div>
@@ -62,7 +62,7 @@ function Item({ it, st, set, checked, toggle }: { it: any; st?: St; set: (s: St 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, ease: EASE }} className="flex items-center gap-3 rounded-[18px] bg-white px-5 py-4 text-[14px]">
         {st.s === "approved" || st.s === "corrected" ? (
           <>
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#111] text-white"><Check className="h-3.5 w-3.5" strokeWidth={3} /></span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-sig text-white"><Check className="h-3.5 w-3.5" strokeWidth={3} /></span>
             <span>{st.s === "corrected" ? "Corrected by Sarah and merged into company memory" : "Merged into company memory"} · <span className="font-mono text-muted">commit {st.sha}</span></span>
             {st.text && <span className="truncate text-muted">“{st.text}”</span>}
           </>
@@ -79,15 +79,15 @@ function Item({ it, st, set, checked, toggle }: { it: any; st?: St; set: (s: St 
     );
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }} className="grid grid-cols-[1fr_32px_1fr] items-start gap-3 rounded-[22px] bg-white p-5">
-      <div className="rounded-[16px] border border-[#ececec] p-4">
+      <div className="rounded-[16px] border border-[var(--line)] p-4">
         <Source src={it.source} quote={it.quote} />
       </div>
       <div className="flex h-full items-center justify-center text-[#b0b0b8]"><ArrowRight className="h-5 w-5" strokeWidth={1.5} /></div>
-      <div className="flex h-full flex-col rounded-[16px] bg-[#f4f5f7] p-4">
+      <div className="flex h-full flex-col rounded-[16px] bg-surface2 p-4">
         <div className="flex items-center justify-between">
           <span className={cn("rounded-full bg-white px-2.5 py-1 text-[12px]", it.kind === "landmine" && "text-alarm")}>{KIND[it.kind] ?? it.kind}</span>
           <label className="flex items-center gap-2 text-[12.5px] text-muted">
-            <input type="checkbox" checked={checked} onChange={toggle} className="h-4 w-4 accent-[#111]" /> select
+            <input type="checkbox" checked={checked} onChange={toggle} className="h-4 w-4 accent-[var(--sig)]" /> select
           </label>
         </div>
         <div className="mt-3 text-[12.5px] text-muted">Keepline wants to commit</div>
@@ -99,12 +99,12 @@ function Item({ it, st, set, checked, toggle }: { it: any; st?: St; set: (s: St 
         <div className="mt-auto flex items-center gap-2 pt-4">
           {edit ? (
             <>
-              <button onClick={() => set({ s: "corrected", sha: sha(it.fact_id + text), text })} className="rounded-full bg-[#111] px-4 py-2 text-[13px] text-white">Save correction</button>
+              <button onClick={() => set({ s: "corrected", sha: sha(it.fact_id + text), text })} className="rounded-full bg-sig px-4 py-2 text-[13px] text-white">Save correction</button>
               <button onClick={() => setEdit(false)} className="rounded-full bg-white px-4 py-2 text-[13px]">Cancel</button>
             </>
           ) : (
             <>
-              <button onClick={() => set({ s: "approved", sha: it.sha })} className="rounded-full bg-[#111] px-4 py-2 text-[13px] text-white">Approve</button>
+              <button onClick={() => set({ s: "approved", sha: it.sha })} className="rounded-full bg-sig px-4 py-2 text-[13px] text-white">Approve</button>
               <button onClick={() => setEdit(true)} className="rounded-full bg-white px-4 py-2 text-[13px]">Correct</button>
               <button onClick={() => set({ s: "removed", sha: "" })} className="rounded-full bg-white px-4 py-2 text-[13px]">Remove</button>
               <button onClick={() => set({ s: "private", sha: "" })} className="ml-auto text-[13px] text-muted hover:text-fg">Keep private</button>
@@ -188,7 +188,7 @@ export default function ReviewPage() {
         ))}
       </div>
       <div className="mt-6 flex items-center justify-between px-1">
-        <button onClick={() => setAll(!all)} className="inline-flex h-10 items-center rounded-full border border-[#e5e5ea] bg-white px-4 text-[14px]">
+        <button onClick={() => setAll(!all)} className="inline-flex h-10 items-center rounded-full border border-[var(--line)] bg-white px-4 text-[14px]">
           {all ? "Show fewer" : `Show all ${total}`} <span className="ml-1">›</span>
         </button>
         <div className="text-[13px] text-muted">{q ? `${q.n_pending} captured items in total · ` : ""}Weekly Slack digest: &ldquo;You have 7 items to review&rdquo; (roadmap) · {pname("sarah")}&apos;s decisions stay local in this demo</div>

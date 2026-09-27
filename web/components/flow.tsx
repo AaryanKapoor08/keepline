@@ -30,7 +30,7 @@ function N8nNode({ data }: NodeProps) {
   const d = data as unknown as FlowNode & { selected?: boolean };
   const I = ICONS[d.icon] ?? Database;
   const border =
-    d.state === "risk" ? "border-alarm" : d.state === "done" ? "border-[#1f9d55]" : d.state === "running" ? "border-[#111]" : "border-[#d9d9de]";
+    d.state === "risk" ? "border-alarm" : d.state === "done" ? "border-[#1f9d55]" : d.state === "running" ? "border-sig" : "border-[#d9d9de]";
   return (
     <div className={cn("flex w-[150px] flex-col items-center transition-opacity duration-500", d.state === "dim" && "opacity-35")}>
       <div
@@ -95,7 +95,7 @@ export default function Flow({ nodes, edges, height = 520, onNodeClick, selected
     labelBgBorderRadius: 6,
   }));
   return (
-    <div style={{ height }} className="overflow-hidden rounded-[18px] bg-[#fafafa]">
+    <div style={{ height }} className="overflow-hidden rounded-[18px] bg-[var(--flow)]">
       <ReactFlow
         key={structure}
         nodes={rfNodes}

@@ -3,6 +3,7 @@
 import { ReactFlow, Background, BackgroundVariant, Controls, Handle, Position, MarkerType, type Node, type Edge, type NodeProps } from "@xyflow/react";
 import { Database } from "lucide-react";
 import { cn } from "./ui";
+import { cssVar } from "@/lib/data";
 
 export const TEAMS: { id: string; label: string; side: "L" | "R" }[] = [
   { id: "engineering", label: "Engineering", side: "L" },
@@ -19,7 +20,7 @@ const fmt = (d?: string | null) => (d ? new Date(d + "T12:00:00").toLocaleDateSt
 function TeamNode({ data }: NodeProps) {
   const d = data as any;
   return (
-    <div className={cn("h-full w-full rounded-[20px] bg-[#f4f5f7] transition-opacity duration-500", d.dim && "opacity-40")}>
+    <div className={cn("h-full w-full rounded-[20px] bg-surface2 transition-opacity duration-500", d.dim && "opacity-40")}>
       <div className="px-4 pt-2.5 text-[13px] font-medium text-muted">{d.label}</div>
     </div>
   );
@@ -29,9 +30,9 @@ function PersonNode({ data }: NodeProps) {
   const d = data as any;
   const ini = String(d.name).split(" ").map((x: string) => x[0]).join("").slice(0, 2);
   return (
-    <div className={cn("flex h-[62px] w-[230px] cursor-pointer items-center gap-3 rounded-[16px] border bg-white px-3 transition-all", d.selected ? "border-[#111] shadow-[0_0_0_3px_rgba(17,17,17,0.08)]" : d.tag ? "border-alarm" : "border-[#e5e5ea] hover:border-[#b0b0b8]", d.dim && "opacity-20")}>
+    <div className={cn("flex h-[62px] w-[230px] cursor-pointer items-center gap-3 rounded-[16px] border bg-white px-3 transition-all", d.selected ? "border-sig shadow-[0_0_0_3px_rgba(17,17,17,0.08)]" : d.tag ? "border-alarm" : "border-[var(--line)] hover:border-[#b0b0b8]", d.dim && "opacity-20")}>
       <Handle type="source" position={d.side === "L" ? Position.Right : Position.Left} className="!h-2 !w-2 !border-2 !border-[#b0b0b8] !bg-white" />
-      <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-medium", d.leaving ? "bg-[#111] text-white" : "bg-[#f4f5f7] text-fg")}>{ini}</span>
+      <span className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-medium", d.leaving ? "bg-sig text-white" : "bg-surface2 text-fg")}>{ini}</span>
       <div className="min-w-0">
         <div className="truncate text-[14px] font-medium leading-tight">{d.name}</div>
         <div className="truncate text-[12px] leading-tight text-muted">{d.role}</div>
@@ -67,6 +68,7 @@ const SHORT: Record<string, string> = {
 export type SimOverlay = { areas: string[]; people: string[]; tags: Record<string, string>; rules: Record<string, number>; pairs: { p: string; a: string; label: string }[] };
 
 export default function OrgFlow({ people, risk, selected, focusTeam, onPerson, sim, onArea, height = 560 }: { people: any[]; risk: any[]; selected?: string | null; focusTeam?: string | null; onPerson: (id: string) => void; sim?: SimOverlay | null; onArea?: (id: string) => void; height?: number }) {
+  const SIG = cssVar("--sig", "#1D4ED8");
   const nodes: Node[] = [];
   const pos: Record<string, { x: number; y: number; side: "L" | "R" }> = {};
   const colY = { L: 0, R: 0 };
@@ -107,21 +109,21 @@ export default function OrgFlow({ people, risk, selected, focusTeam, onPerson, s
     const dim = sim ? !(sim.areas.includes(s.a) && sim.people.includes(s.p)) : focusTeam && people.find((p) => p.id === s.p)?.team !== focusTeam;
     return {
       id: `e${i}`, source: s.p, target: `a:${s.a}`, targetHandle: pos[s.p].side === "L" ? "l" : "r", type: "default",
-      style: { stroke: on || (sim && !dim) ? "#111" : "#c7c7cc", strokeWidth: on || (sim && !dim) ? 2 : 1.4, opacity: dim ? 0.15 : 1, transition: "opacity .6s" },
-      markerEnd: { type: MarkerType.ArrowClosed, color: on ? "#111" : "#c7c7cc", width: 14, height: 14 },
+      style: { stroke: on || (sim && !dim) ? SIG : "#c7c7cc", strokeWidth: on || (sim && !dim) ? 2 : 1.4, opacity: dim ? 0.15 : 1, transition: "opacity .6s" },
+      markerEnd: { type: MarkerType.ArrowClosed, color: on ? SIG : "#c7c7cc", width: 14, height: 14 },
     };
   });
   for (const [i, pr] of (sim?.pairs ?? []).entries()) {
     if (!pos[pr.p]) continue;
     edges.push({
       id: `pair${i}`, source: pr.p, target: `a:${pr.a}`, targetHandle: pos[pr.p].side === "L" ? "l" : "r", type: "default", label: pr.label,
-      style: { stroke: "#111", strokeWidth: 1.8, strokeDasharray: "6 5" }, animated: true,
-      labelStyle: { fontSize: 12, fill: "#111", fontWeight: 500 }, labelBgStyle: { fill: "#ffffff" }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#111", width: 14, height: 14 },
+      style: { stroke: SIG, strokeWidth: 1.8, strokeDasharray: "6 5" }, animated: true,
+      labelStyle: { fontSize: 12, fill: SIG, fontWeight: 500 }, labelBgStyle: { fill: "#ffffff" }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
+      markerEnd: { type: MarkerType.ArrowClosed, color: SIG, width: 14, height: 14 },
     });
   }
   return (
-    <div style={{ height }} className="overflow-hidden rounded-[18px] bg-[#fafafa]">
+    <div style={{ height }} className="overflow-hidden rounded-[18px] bg-[var(--flow)]">
       <ReactFlow
         key={focusTeam ?? "all"}
         nodes={nodes}
