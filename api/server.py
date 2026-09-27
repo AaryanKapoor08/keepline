@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from keepline.config import DEMO_COMPANY, DEMO_TODAY, RESULTS_DIR, CACHE_DIR
-from keepline.contracts import EdgeRel, FactKind, ReviewStatus, to_dict
+from keepline.contracts import EdgeRel, FactKind, ReviewStatus, to_dict, to_json
 
 TODAY: date = DEMO_TODAY
 
@@ -720,3 +720,45 @@ def review_item(fact_id: str, body: ReviewIn) -> dict[str, Any]:
     """Persisted review decision. The demo UI keeps decisions client-side so rehearsals never mutate the DB."""
     store().set_review_status(fact_id, ReviewStatus(body.status), body.corrected_text)
     return {"ok": True, "fact_id": fact_id, "status": body.status, "sha": _sha(fact_id + (body.corrected_text or ""))}
+
+
+# ----------------------------------------------------------------------------------------------- chat ("Ask Keepline")
+CHAT_DEMO: list[str] = [
+    "What should I know before touching reconciliation?",
+    "Who can cover CoreLink when Sarah leaves?",
+    "What breaks if Tom leaves?",
+    "Can I rotate the CoreLink API key this Friday?",
+    "How has the reconciliation schedule changed?",
+    "What's the office wifi password?",
+]
+
+
+@lru_cache(maxsize=1)
+def chat_agent():
+    """Offline, deterministic tool router by default (demo-safe); set KEEPLINE_CHAT_LLM=1 for the Claude tool loop."""
+    import os
+
+    from keepline.agent.chat import load_default_chat_agent
+
+    return load_default_chat_agent(use_llm=True if os.environ.get("KEEPLINE_CHAT_LLM") == "1" else False)
+
+
+def do_chat(messages: list[dict[str, str]], asker_id: str = "alex", as_of: str | None = None) -> dict[str, Any]:
+    t = date.fromisoformat(as_of) if as_of else TODAY
+    out = chat_agent().reply(messages, asker_id=asker_id, as_of=t)
+    out["route_people"] = [_p(x) for x in out.get("route_to", [])]
+    return json.loads(to_json(out))
+
+
+class ChatIn(BaseModel):
+    messages: list[dict[str, str]]
+    asker_id: str = "alex"
+    as_of: str | None = None
+
+
+@app.post("/chat")
+def chat(body: ChatIn) -> dict[str, Any]:
+    try:
+        return do_chat(body.messages, body.asker_id, body.as_of)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(503, f"chat unavailable: {e}")
