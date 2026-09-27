@@ -36,8 +36,8 @@ function PersonNode({ data }: NodeProps) {
       <div className="min-w-0">
         <div className="truncate text-[14px] font-medium leading-tight">{d.name}</div>
         <div className="truncate text-[12px] leading-tight text-muted">{d.role}</div>
-        {d.tag ? <div className="text-[11.5px] font-medium leading-tight text-alarm">{d.tag}</div> : d.leaving && <div className="text-[11.5px] font-medium leading-tight text-alarm">leaves {fmt(d.leaving)}</div>}
-        {d.joining && <div className="text-[11.5px] font-medium leading-tight text-fg">joins {fmt(d.joining)}</div>}
+        {d.tag ? <div className="truncate text-[12px] font-medium leading-tight text-alarm">{d.tag}</div> : d.leaving && <div className="text-[12px] font-medium leading-tight text-alarm">leaves {fmt(d.leaving)}</div>}
+        {d.joining && <div className="text-[12px] font-medium leading-tight text-fg">joins {fmt(d.joining)}</div>}
       </div>
     </div>
   );
@@ -52,7 +52,7 @@ function AreaNode({ data }: NodeProps) {
       <Database className={cn("h-4 w-4 shrink-0", d.bf1 ? "text-alarm" : "text-fg")} strokeWidth={1.6} />
       <div className="min-w-0">
         <div className="truncate text-[13px] font-medium leading-tight">{d.label}</div>
-        <div className={cn("text-[11.5px] leading-tight", d.bf1 ? "text-alarm" : "text-muted")}>{d.bf1 ? "only 1 person knows it" : `${d.bf} people know it`}</div>
+        <div className={cn("text-[12px] leading-tight", d.bf1 ? "text-alarm" : "text-muted")}>{d.bf1 ? "only 1 person knows it" : `${d.bf} people know it`}</div>
       </div>
       <Handle id="r" type="target" position={Position.Right} className="!h-2 !w-2 !border-2 !border-[#b0b0b8] !bg-white" />
     </div>

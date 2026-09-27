@@ -166,3 +166,16 @@ export function isRestatement(newText: string, oldText: string): boolean {
   const inter = [...a].filter((x) => b.has(x)).length;
   return inter / (a.size + b.size - inter || 1) >= 0.4;
 }
+
+// ---------------------------------------------------------------------------------------------- display cleanup
+const FILLER = /^(?:(?:yep|yeah|yes|ok(?:ay)?(?: so)?|so|btw|fyi(?: for anyone touching this)?|heads up(?: all)?|reminder(?: for [^:]+)?|update(?: after [^:]+)?)\s*[,:\u2014\u2013-]*\s+|@[\w.]+[\s,:]*)+/i;
+/** Strip conversational filler and leading @mentions from an extracted fact for display. */
+export function cleanFact(t: string): string {
+  const s = String(t ?? "").replace(FILLER, "").trim();
+  return s ? s[0].toUpperCase() + s.slice(1) : t;
+}
+/** A fact that reads on its own: long enough, not a continuation fragment. */
+export function isComplete(t: string): boolean {
+  const s = String(t ?? "").trim();
+  return s.split(/\s+/).length >= 7 && !/^(otherwise|also|and|but|or|then|@)/i.test(s) && !/^[a-z]/.test(s);
+}

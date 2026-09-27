@@ -23,14 +23,9 @@ USE WAREHOUSE KEEPLINE_WH;
 USE DATABASE KEEPLINE;
 USE SCHEMA CORE;
 
-CREATE OR REPLACE CORTEX SEARCH SERVICE CORE.RECEIPTS_SEARCH
-  ON snippet
-  ATTRIBUTES area_id, source_type, visibility, owner_team, author_id, participants, doc_date
-  WAREHOUSE = KEEPLINE_WH
-  TARGET_LAG = '15 minutes'
-  EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
-  COMMENT = 'Keepline receipts: every answer cites one of these rows.'
-AS (
+-- Materialized source: Cortex Search needs change tracking, which the masking / row access policies on
+-- the base tables (correlated subqueries) do not allow. DMs are excluded here, so nothing masked is copied.
+CREATE OR REPLACE TABLE CORE.RECEIPTS_SEARCH_SRC CHANGE_TRACKING = TRUE AS
   SELECT
     d.id                                                  AS doc_id,
     COALESCE(d.title || ' - ', '') || d.text              AS snippet,
@@ -48,17 +43,22 @@ AS (
   FROM CORE.DOCUMENTS d
   LEFT JOIN CORE.PEOPLE p ON p.id = d.author_id
   WHERE d.visibility IN ('public', 'team')                -- DMs are never indexed
-    AND d.text IS NOT NULL
-);
+    AND d.text IS NOT NULL;
 
-CREATE OR REPLACE CORTEX SEARCH SERVICE CORE.FACTS_SEARCH
-  ON fact_text
-  ATTRIBUTES area_id, kind, is_current, visibility, owner_team, stated_by, valid_from
+CREATE OR REPLACE CORTEX SEARCH SERVICE CORE.RECEIPTS_SEARCH
+  ON snippet
+  ATTRIBUTES area_id, source_type, visibility, owner_team, author_id, participants, doc_date
   WAREHOUSE = KEEPLINE_WH
   TARGET_LAG = '15 minutes'
   EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
-  COMMENT = 'Keepline facts with supersession state; filter is_current = 1 for answers, 0 for history.'
+  COMMENT = 'Keepline receipts: every answer cites one of these rows.'
 AS (
+  SELECT * FROM CORE.RECEIPTS_SEARCH_SRC
+);
+
+-- Materialized source: Cortex Search needs change tracking, which the masking / row access policies on
+-- the base tables (correlated subqueries) do not allow. DMs are excluded here, so nothing masked is copied.
+CREATE OR REPLACE TABLE CORE.FACTS_SEARCH_SRC CHANGE_TRACKING = TRUE AS
   SELECT
     f.id                                                  AS fact_id,
     f.text || COALESCE(' (quote: "' || f.quote || '")', '') AS fact_text,
@@ -77,7 +77,17 @@ AS (
     f.source_doc_ids_json[0]::STRING                      AS primary_doc_id
   FROM CORE.FACTS f
   WHERE f.visibility IN ('public', 'team')
-    AND f.review_status <> 'rejected'
+    AND f.review_status <> 'rejected';
+
+CREATE OR REPLACE CORTEX SEARCH SERVICE CORE.FACTS_SEARCH
+  ON fact_text
+  ATTRIBUTES area_id, kind, is_current, visibility, owner_team, stated_by, valid_from
+  WAREHOUSE = KEEPLINE_WH
+  TARGET_LAG = '15 minutes'
+  EMBEDDING_MODEL = 'snowflake-arctic-embed-l-v2.0'
+  COMMENT = 'Keepline facts with supersession state; filter is_current = 1 for answers, 0 for history.'
+AS (
+  SELECT * FROM CORE.FACTS_SEARCH_SRC
 );
 
 GRANT USAGE ON CORTEX SEARCH SERVICE CORE.RECEIPTS_SEARCH TO ROLE KEEPLINE_APP;

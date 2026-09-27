@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useData, fmtDate, isRestatement, isUnrelated } from "@/lib/data";
+import { useData, fmtDate, isRestatement, isUnrelated, cleanFact } from "@/lib/data";
 import { PageTop, Card, Details, Big, Avatar } from "@/components/kit";
 import { cn } from "@/components/ui";
 
@@ -56,7 +56,7 @@ export default function Home() {
             </div>
             <div className="rounded-[16px] bg-white/[0.07] p-4">
               <div className="text-[26px] font-medium">{meta?.n_docs?.toLocaleString() ?? "—"}</div>
-              <div className="text-[12.5px] text-white/60">receipts, DMs excluded</div>
+              <div className="text-[12.5px] text-white/60">receipts from work tools</div>
             </div>
           </div>
         </Card>
@@ -68,7 +68,7 @@ export default function Home() {
                 <div className="text-[15px]">{r.area_name}</div>
                 <div className="text-[12.5px] text-muted">{r.bus_factor <= 1 ? `only ${r.at_risk_person_id ? r.at_risk_person_id[0].toUpperCase() + r.at_risk_person_id.slice(1) : "one person"}` : `${r.bus_factor} people`} · leaves in {r.countdown_days ?? "—"} days</div>
               </div>
-              <div className={cn("text-[24px] font-medium tabular-nums", r.risk >= 0.5 && "text-alarm")}>{Math.round(r.risk * 100)}</div>
+              <div className={cn("text-[24px] font-medium tabular-nums", r.risk >= 0.5 && "text-alarm")}>{Math.round(r.risk * 100)}<span className="text-[14px] font-normal text-muted">/100</span></div>
             </div>
           ))}
         </Card>
@@ -80,7 +80,7 @@ export default function Home() {
             <div key={c.sha} className="flex items-start gap-3 border-b border-[var(--line)] py-3 last:border-0">
               <span className="mt-0.5 font-mono text-[12.5px] text-muted">{c.sha}</span>
               <div className="flex-1">
-                <div className="text-[14.5px] leading-snug">{c.message}</div>
+                <div className="text-[14.5px] leading-snug">{cleanFact(c.message)}</div>
                 <div className="text-[12.5px] text-muted">{c.author_name} · {fmtDate(c.valid_from)}</div>
               </div>
               {c.change && <span className="rounded-full bg-surface2 px-2.5 py-1 text-[12px]">replaces a fact</span>}

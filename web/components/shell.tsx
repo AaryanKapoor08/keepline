@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Settings, Bell } from "lucide-react";
 import { cn } from "./ui";
 import AskPanel from "./askpanel";
@@ -12,13 +12,21 @@ export const ROUTES = [
   { href: "/review", label: "Review" },
   { href: "/history", label: "History" },
   { href: "/lab", label: "Proof" },
-  { href: "/close", label: "Snowflake" },
+  { href: "/snowflake", label: "Snowflake" },
 ];
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const idx = ROUTES.findIndex((r) => r.href === path);
+  const [asSarah, setAsSarah] = useState(false);
+  useEffect(() => {
+    const on = (e: Event) => setAsSarah(!!(e as CustomEvent).detail);
+    window.addEventListener("keepline-viewer", on);
+    return () => window.removeEventListener("keepline-viewer", on);
+  }, []);
+  useEffect(() => setAsSarah(false), [path]);
+  const viewerSarah = path === "/review" || asSarah;
 
   useEffect(() => {
     ROUTES.forEach((r) => router.prefetch(r.href));
@@ -71,7 +79,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <AskPanel />
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface2"><Settings className="h-[18px] w-[18px]" strokeWidth={1.6} /></span>
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface2"><Bell className="h-[18px] w-[18px]" strokeWidth={1.6} /></span>
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sig text-[13px] font-medium text-white" title="Dave MacLeod, COO">DM</span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-sig text-[13px] font-medium text-white" title={viewerSarah ? "Signed in as Sarah Chen" : "Signed in as Dave MacLeod, COO"}>{viewerSarah ? "SC" : "DM"}</span>
           </div>
         </header>
         <main className="px-2 pb-6 pt-8">{children}</main>

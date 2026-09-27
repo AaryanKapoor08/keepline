@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Hash, Mail, Ticket, FileText, Lock, ArrowRight, Check } from "lucide-react";
-import { useData, fmtDate, pname } from "@/lib/data";
+import { useData, fmtDate, pname, cleanFact, isComplete } from "@/lib/data";
 import { PageTop, Avatar, EASE } from "@/components/kit";
 import { cn } from "@/components/ui";
 
@@ -130,7 +130,12 @@ export default function ReviewPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-  const groups: Record<string, any[]> = q?.groups ?? {};
+  const groups: Record<string, any[]> = Object.fromEntries(
+    Object.entries((q?.groups ?? {}) as Record<string, any[]>).map(([k, v]) => [
+      k,
+      v.map((it) => ({ ...it, fact: cleanFact(it.fact) })).sort((a, b) => Number(isComplete(b.fact)) - Number(isComplete(a.fact))),
+    ]),
+  );
   const visible = Object.entries(groups).filter(([k]) => src[k]);
   const shownIds = visible.flatMap(([k, items]) => (all ? items : items.slice(0, FIRST[k] ?? 1)).map((i) => i.fact_id));
   const nChecked = shownIds.filter((id) => checked[id] && !state[id]).length;
@@ -158,7 +163,7 @@ export default function ReviewPage() {
             {chip("email", "Email", Mail, src.email)}
             {chip("ticket", "Tickets", Ticket, src.ticket)}
             {chip("doc", "Docs", FileText, src.doc)}
-            {chip("dm", "Direct messages", Lock, false, "never included")}
+            {chip("dm", "Direct messages are never included.", Lock, false, " ")}
             {chip("random", "#random", Hash, false, "off")}
           </>
         }

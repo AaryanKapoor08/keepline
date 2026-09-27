@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Hash, Mail, Ticket, FileText } from "lucide-react";
-import { getJSON, useData, fmtDate, first, isRestatement, isUnrelated } from "@/lib/data";
+import { getJSON, useData, fmtDate, first, isRestatement, isUnrelated, cleanFact, isComplete } from "@/lib/data";
 import { PageTop, Card, Avatar, Details, Fade } from "@/components/kit";
 import { cn } from "@/components/ui";
 
@@ -26,12 +26,12 @@ function Diff({ d, asOf }: { d: any; asOf: string }) {
       </div>
       <div className={cn("flex gap-3 px-4 py-2", happened ? "bg-alarmtint" : "bg-white")}>
         <span className="text-muted">{happened ? "−" : " "}</span>
-        <span className={happened ? "text-[#8a2a22]" : ""}>{d.old.message}</span>
+        <span className={happened ? "text-[#8a2a22]" : ""}>{cleanFact(d.old.message)}</span>
       </div>
       {happened && (
         <div className="flex gap-3 bg-sigtint px-4 py-2">
           <span className="text-muted">+</span>
-          <span>{d.new.message}</span>
+          <span>{cleanFact(d.new.message)}</span>
         </div>
       )}
       <div className="bg-white px-4 py-2 font-sans text-[12.5px] text-muted">
@@ -63,7 +63,7 @@ export default function HistoryPage() {
   const commits = useMemo(() => {
     const cs: any[] = (h?.commits ?? []).filter((c: any) => c.valid_from <= asOf);
     const replacedBy = new Set(cs.filter((c) => c.supersedes).map((c) => c.supersedes));
-    return cs.filter((c) => !replacedBy.has(c.fact_id)).slice(0, 7).map((c) => ({ ...c, versions: 1 + (h?.diffs ?? []).filter((d: any) => d.new.fact_id === c.fact_id && !isRestatement(d.new.message, d.old.message)).length }));
+    return cs.filter((c) => !replacedBy.has(c.fact_id) && isComplete(cleanFact(c.message))).map((c) => ({ ...c, message: cleanFact(c.message) })).slice(0, 7).map((c) => ({ ...c, versions: 1 + (h?.diffs ?? []).filter((d: any) => d.new.fact_id === c.fact_id && !isRestatement(d.new.message, d.old.message)).length }));
   }, [h, asOf]);
   const real = (h?.diffs ?? []).filter((d: any) => !isRestatement(d.new.message, d.old.message));
   const diff = real.find((d: any) => /skip/i.test(d.old.message)) ?? real[0];
@@ -87,7 +87,7 @@ export default function HistoryPage() {
             <div key={d.sha} className="flex items-start gap-3 border-b border-[var(--line)] py-3 last:border-0">
               <Avatar id={d.author ?? "sarah"} size={30} />
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] leading-snug">{d.message}</div>
+                <div className="text-[15px] leading-snug">{cleanFact(d.message)}</div>
                 {d.replaced && !d.restated && <div className="mt-0.5 text-[13px] text-muted">replaced &ldquo;{d.replaced}&rdquo;</div>}
                 {d.restated && <div className="mt-0.5 text-[13px] text-muted" title={d.replaced}>also stated {fmtDate(d.replaced_date)} ›</div>}
                 <div className="mt-1 flex items-center gap-2 text-[12.5px] text-muted">

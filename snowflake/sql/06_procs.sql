@@ -35,8 +35,8 @@ CREATE OR REPLACE PROCEDURE APP.RISK_MAP(TODAY DATE, EXCLUDE_PERSON STRING)
   RUNTIME_VERSION = '3.11'
   PACKAGES = ('snowflake-snowpark-python')
   HANDLER = 'run'
-  EXECUTE AS OWNER
   COMMENT = 'Keepline risk map (topic-level). EXCLUDE_PERSON simulates a departure ("what if Sarah leaves?").'
+  EXECUTE AS OWNER
 AS
 $$
 import math
@@ -88,10 +88,10 @@ def score(session, today, exclude_person):
         "SELECT area_id, COUNT(*) AS n FROM KEEPLINE.CORE.QUERY_LOG GROUP BY area_id").collect()}
     expertise = {}
     for r in session.sql("""
-        SELECT person_id, area_id, score, n_docs, n_tickets_closed FROM KEEPLINE.CORE.EXPERTISE
+        SELECT person_id, area_id, score, n_docs, n_tickets_closed, n_facts_stated FROM KEEPLINE.CORE.EXPERTISE
         WHERE enough_data ORDER BY score DESC""").collect():
         if r["PERSON_ID"] != exclude_person and r["PERSON_ID"] in people:
-            expertise.setdefault(r["AREA_ID"], []).append(r)
+            expertise.setdefault(r["AREA_ID"], []).append(r.as_dict())
 
     signals = {
         "incidents": _norm({a["ID"]: incidents.get(a["ID"], 0) for a in areas}),
@@ -106,19 +106,25 @@ def score(session, today, exclude_person):
         crit = ((a["CRITICALITY"] or 2) - 1) / 2.0
         evidence = sum(s[aid] for s in signals.values()) / len(signals)
         importance = min(1.0, 0.4 * crit + 0.6 * evidence)
-        strong = [e for e in expertise.get(aid, []) if e["SCORE"] >= STRONG]
+        # "Doing > talking" (same rule as keepline.products._common.is_strong): a strong holder also has
+        # hands-on evidence -- closed tickets or a body of stated facts -- not just chatter about the area.
+        strong = [e for e in expertise.get(aid, []) if e["SCORE"] >= STRONG
+                  and ((e.get("N_TICKETS_CLOSED") or 0) >= 2 or (e.get("N_FACTS_STATED") or 0) >= 8)]
         bf = len(strong)
         red = redundancy(bf)
         at_risk, dl, countdown = None, 1.0, None
         if strong:
-            # the expert whose departure drives the risk: highest likelihood, then strongest evidence
-            ranked = sorted(strong, key=lambda e: (
-                -departure_likelihood(people[e["PERSON_ID"]]["DEPARTURE_DATE"], people[e["PERSON_ID"]]["DEPARTURE_TYPE"], today),
-                -e["SCORE"]))
-            top = ranked[0]
+            # the holder whose departure hurts most: likelihood weighted by their share of the evidence
+            top_score = max(e["SCORE"] for e in strong) or 1.0
+
+            def weighted(e):
+                pp = people[e["PERSON_ID"]]
+                return departure_likelihood(pp["DEPARTURE_DATE"], pp["DEPARTURE_TYPE"], today) * e["SCORE"] / top_score
+
+            top = max(strong, key=lambda e: (weighted(e), e["SCORE"]))
             p = people[top["PERSON_ID"]]
             at_risk = top["PERSON_ID"]
-            dl = departure_likelihood(p["DEPARTURE_DATE"], p["DEPARTURE_TYPE"], today)
+            dl = weighted(top)
             countdown = (p["DEPARTURE_DATE"] - today).days if p["DEPARTURE_DATE"] else None
         risk = importance * (1 - red) * dl
         n_facts = fact_counts.get(aid, {}).get("N_FACTS", 0)
@@ -201,8 +207,8 @@ CREATE OR REPLACE PROCEDURE APP.HANDOFF_PACK(PERSON_ID STRING, TODAY DATE)
   RUNTIME_VERSION = '3.11'
   PACKAGES = ('snowflake-snowpark-python')
   HANDLER = 'run'
-  EXECUTE AS OWNER
   COMMENT = 'Keepline handoff pack for a departing person. Every item carries receipts. Never includes secrets.'
+  EXECUTE AS OWNER
 AS
 $$
 import json

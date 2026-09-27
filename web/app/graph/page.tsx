@@ -97,11 +97,23 @@ function AskBox({ pid }: { pid: string }) {
 function CreditSection({ pid }: { pid: string }) {
   const [c, setC] = useState<any>(null);
   const [shared, setShared] = useState(false);
+  const [asOwner, setAsOwner] = useState(false);
   useEffect(() => {
     getJSON(`/credit/${pid}`, `credit_${pid}`).then((r) => setC(r.data));
   }, [pid]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("keepline-viewer", { detail: asOwner && pid === "sarah" }));
+    return () => { window.dispatchEvent(new CustomEvent("keepline-viewer", { detail: false })); };
+  }, [asOwner, pid]);
   if (!c || (!c.n_questions && !c.onboarding_facts)) return null;
   const fn = first(pid);
+  if (!asOwner)
+    return (
+      <button onClick={() => setAsOwner(true)} className="flex w-full items-center justify-between rounded-[20px] bg-white p-5 text-left">
+        <span className="text-[16px] font-medium">Credit</span>
+        <span className="flex items-center gap-1.5 text-[13px] text-muted"><Lock className="h-3 w-3" strokeWidth={1.8} /> Private to {fn} · view as {fn} ›</span>
+      </button>
+    );
   return (
     <div className="rounded-[20px] bg-white p-5">
       <div className="flex items-baseline justify-between">
@@ -231,7 +243,7 @@ function AlexSheet({ onClose }: { onClose: () => void }) {
 }
 
 const SIM_T = [
-  { id: "corelink_v3", label: "Upgrade the CoreLink API to v3 next month", short: "CoreLink v3" },
+  { id: "corelink_v3", label: "Retire CoreLink v2 before the Oct 31 sunset", short: "CoreLink v2 sunset" },
   { id: "mobile_app", label: "Launch a new mobile banking app", short: "Mobile banking app" },
   { id: "fintrac", label: "Overhaul FINTRAC reporting", short: "FINTRAC overhaul" },
 ];
@@ -253,7 +265,7 @@ function overlay(r: any, o: any) {
   const people = new Set<string>(r.dependents ?? []);
   for (const a of o.areas) for (const k of ["lead", "reviewer", "learner"]) if (a[k]) people.add(a[k]);
   const tags: Record<string, string> = {};
-  for (const x of r.timeline) if (people.has(x.person_id)) tags[x.person_id] = `${x.person_id === "mike" ? "contract ends" : "leaves"} ${md(x.date)} · week ${x.week + 1} of project`;
+  for (const x of r.timeline) if (people.has(x.person_id)) tags[x.person_id] = `${x.person_id === "mike" ? "contract ends" : "leaves"} ${md(x.date)} · wk ${x.week + 1}`;
   const rules: Record<string, number> = {};
   for (const a of r.areas) if (a.rules?.length) rules[a.area_id] = a.rules.length;
   const pairs: { p: string; a: string; label: string }[] = [];
@@ -267,8 +279,13 @@ function overlay(r: any, o: any) {
 function SimResult({ r, opt, setOpt }: { r: any; opt: string; setOpt: (o: string) => void }) {
   const focus = r.areas.find((a: any) => a.area_id === "corelink_api") ?? [...r.areas].sort((a: any, b: any) => a.holders.length - b.holders.length)[0];
   const at = (o: any) => o.areas.find((a: any) => a.area_id === focus?.area_id)?.p_uncovered_at_end;
+  const bal = r.options.find((x: any) => x.id === "balanced");
   const label = (o: any) =>
-    o.id === "fastest" ? "Without pairing" : o.id === "balanced" ? `Pair ${o.areas.find((a: any) => a.learner)?.learner_name?.split(" ")[0] ?? "a learner"} this week` : "Resilient";
+    o.id === "fastest"
+      ? "Without pairing"
+      : o.id === "balanced"
+        ? `Pair ${o.areas.find((a: any) => a.learner)?.learner_name?.split(" ")[0] ?? "a learner"} this week`
+        : (at(o) ?? 1) < (at(bal) ?? 1) ? "Resilient" : "Spread across team";
   return (
     <div className="rounded-[24px] bg-sig p-6 text-white">
       <div className="text-[15px] text-white/60">{focus?.area_name} uncovered at project end</div>
@@ -277,7 +294,7 @@ function SimResult({ r, opt, setOpt }: { r: any; opt: string; setOpt: (o: string
         {r.options.map((o: any) => (
           <button key={o.id} onClick={() => setOpt(o.id)} className={cn("flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-left transition-colors", opt === o.id ? "bg-white text-[#111]" : "bg-white/[0.07] hover:bg-white/[0.12]")}>
             <span className="text-[15px]">{label(o)}</span>
-            <span className="text-[26px] font-medium tabular-nums">{pct(at(o))}</span>
+            <span className="text-[26px] font-medium tabular-nums">{pct(at(o))} <span className="text-[13px] font-normal opacity-60">risk</span></span>
           </button>
         ))}
       </div>

@@ -23,11 +23,11 @@ from keepline.products.simulate import areas_in_brief
 TEMPLATES: list[dict[str, Any]] = [
     {
         "id": "corelink_v3",
-        "name": "Upgrade CoreLink API to v3",
-        "weeks": 12,
-        "label": "Upgrade the CoreLink API to v3 next month",
-        "brief": "Upgrade the CoreLink API integration to v3: new API keys, updated nightly reconciliation, "
-                 "and ACH settlement files re-tested before cutover.",
+        "name": "Retire CoreLink v2 before the Oct 31 sunset",
+        "weeks": 8,
+        "label": "Retire CoreLink v2 before the Oct 31 sunset",
+        "brief": "Retire the CoreLink v2 API before the Oct 31 sunset: move the last integrations to the CoreLink API v3, "
+                 "rotate the API keys, update the nightly reconciliation, and re-test ACH settlement files.",
     },
     {
         "id": "mobile_app",

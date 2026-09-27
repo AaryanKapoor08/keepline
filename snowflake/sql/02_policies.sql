@@ -120,12 +120,16 @@ $$
 BEGIN
   DELETE FROM CORE.ACL WHERE person_id = '__pipeline__';
   INSERT INTO CORE.ACL (object_id, person_id)
-    SELECT d.id, '__pipeline__'
-    FROM CORE.DOCUMENTS d, LATERAL FLATTEN(input => d.participants_json) p
+    WITH parts AS (   -- flatten first: a LATERAL view cannot sit on the left side of a join
+      SELECT d.id, d.source_type, p.value::STRING AS person_id
+      FROM CORE.DOCUMENTS d, LATERAL FLATTEN(input => d.participants_json) p
+      WHERE d.visibility = 'private'
+    )
+    SELECT parts.id, '__pipeline__'
+    FROM parts
     LEFT JOIN CORE.SOURCE_CONTROLS sc
-      ON sc.person_id = p.value::STRING AND sc.source_type = d.source_type
-    WHERE d.visibility = 'private'
-    GROUP BY d.id
+      ON sc.person_id = parts.person_id AND sc.source_type = parts.source_type
+    GROUP BY parts.id
     HAVING COUNT(*) > 0 AND COUNT_IF(COALESCE(sc.include_private, FALSE)) = COUNT(*);
   RETURN 'pipeline opt-ins refreshed';
 END;

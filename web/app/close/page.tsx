@@ -26,7 +26,7 @@ export default function ClosePage() {
     { id: "email", label: "Email", icon: "email", trigger: true, state: st("email") },
     { id: "ticket", label: "Tickets", icon: "ticket", trigger: true, state: st("ticket") },
     { id: "doc", label: "Docs", icon: "doc", trigger: true, state: st("doc") },
-    { id: "privacy", label: "Privacy filter", sub: "DMs excluded · row access policies", icon: "shield", state: st("privacy") },
+    { id: "privacy", label: "Privacy filter", sub: "Direct messages are never included.", icon: "shield", state: st("privacy") },
     { id: "extract", label: "Extract facts", sub: "AI_EXTRACT", icon: "extract", state: st("extract") },
     { id: "memory", label: "Versioned memory", sub: "Time Travel = checkout any date", icon: "history", state: st("memory") },
     { id: "agent", label: "Answer agent", sub: "Cortex Search + Agent", icon: "bot", state: st("agent") },
@@ -61,7 +61,7 @@ export default function ClosePage() {
             <br />
             <span className="text-white/50">Keepline shows what it&apos;s about to forget.</span>
           </div>
-          <div className="mt-6 text-[14px] text-white/60">DMs off by default · every employee reviews what was captured · never used for performance reviews</div>
+          <div className="mt-6 text-[14px] text-white/60">Direct messages are never included. Every employee reviews what was captured. Never used for performance reviews.</div>
         </Card>
         <Card title="Pricing" right={<Details onClick={() => setPrice(!price)} open={price}>{price ? "Less" : "Market"}</Details>}>
           <div className="flex items-end gap-3">

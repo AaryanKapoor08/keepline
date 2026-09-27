@@ -91,7 +91,7 @@ function Answer({ t, onRoute }: { t: Turn; onRoute: (id: string) => void }) {
           <button onClick={() => setTrace(!trace)} className="hover:text-fg">How I found this <span className={cn("inline-block transition-transform", trace && "rotate-90")}>›</span></button>
         )}
         <span>{a.action === "answer" ? "Answered from receipts" : a.action === "route" ? "Routed to a person" : "No evidence, so no answer"} · confidence {Math.round((a.confidence ?? 0) * 100)}%</span>
-        {t.offline && <span>· saved answer</span>}
+        {t.offline && <span className="rounded-full bg-white px-2.5 py-0.5 text-[12px] text-fg">Offline — showing saved answer</span>}
       </div>
       <AnimatePresence>
         {trace && (
@@ -161,7 +161,10 @@ export default function AskPanel() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex justify-end bg-black/15" onClick={() => setOpen(false)}>
             <motion.div initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 60, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} onClick={(e) => e.stopPropagation()} className="m-4 flex w-[660px] flex-col rounded-[28px] bg-canvas">
               <div className="flex items-center justify-between rounded-t-[28px] px-6 pb-3 pt-5">
-                <div className="text-[22px] font-medium">Ask Keepline</div>
+                <div className="flex items-center gap-3">
+                  <div className="text-[22px] font-medium">Ask Keepline</div>
+                  <span className="rounded-full bg-white px-3 py-1 text-[12.5px] text-muted">{pname(asker).split(" ")[0]} · Tue Sep 15</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] text-muted">Asking as</span>
                   {ASKERS.map((p) => (
