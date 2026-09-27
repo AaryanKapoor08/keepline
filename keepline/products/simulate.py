@@ -12,7 +12,7 @@ from datetime import date
 
 from keepline.contracts import AreaRisk
 
-from keepline.products._common import STRONG_EXPERTISE, StoreLike, _safe, people_by_id
+from keepline.products._common import StoreLike, _safe, is_strong, people_by_id
 from keepline.products.handoff import successor
 from keepline.products.risk import risk_map
 
@@ -63,9 +63,8 @@ def staff_project(store: StoreLike, brief: str, team: list[str], today: date) ->
     for area_id, terms in areas_in_brief(store, brief).items():
         area = _safe(lambda: store.area(area_id))
         exps = _safe(lambda: store.expertise(area_id=area_id)) or []
-        holders = [e.person_id for e in exps if e.person_id in team and e.score >= STRONG_EXPERTISE]
-        learner, reviewer = successor([e for e in exps if e.person_id not in holders or e.score >= STRONG_EXPERTISE],
-                                      people, "", today)
+        holders = [e.person_id for e in exps if e.person_id in team and is_strong(e)]
+        learner, reviewer = successor(exps, people, "", today)
         if learner in holders:
             learner = next((pid for pid in team if pid not in holders), None)
         plans.append(StaffingPlan(

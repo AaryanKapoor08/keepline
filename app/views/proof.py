@@ -11,6 +11,8 @@ if str(_R) not in sys.path:
 
 from typing import Any  # noqa: E402
 
+bench: dict[str, Any]
+
 import altair as alt  # noqa: E402
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
@@ -37,10 +39,10 @@ splits = [s for s in ("test", "dev") if data.results_json(f"benchmark_{s}.json")
 if not splits:
     ui.empty_state("No benchmark results yet", "Run the evaluation to produce data/results/benchmark_dev.json.",
                    "python -m keepline.rl.train && python -m keepline.eval.benchmark --split dev")
-    st.stop()
-
-split = st.segmented_control("Split", splits, default=splits[-1] if "dev" in splits else splits[0], key="split") or splits[0]
-bench: dict[str, Any] = data.results_json(f"benchmark_{split}.json") or {}
+    split, bench = None, {}
+else:
+    split = st.segmented_control("Split", splits, default=splits[0], key="split") or splits[0]
+    bench = data.results_json(f"benchmark_{split}.json") or {}
 systems: dict[str, Any] = bench.get("systems", {})
 order = [s for s in ("plain", "keepline", "keepline_rl") if s in systems] + [s for s in systems if s not in ui.SYSTEM_COLORS]
 label = {s: ui.SYSTEM_LABELS.get(s, s) for s in order}
@@ -53,8 +55,9 @@ def val(sys_: str, key: str) -> dict[str, Any]:
 
 
 best = "keepline_rl" if "keepline_rl" in systems else ("keepline" if "keepline" in systems else (order[-1] if order else None))
-st.caption(f"Split **{split}** · N = {bench.get('n_questions', '?')} questions · LLM: {bench.get('llm', 'none')} · "
-           f"generated {str(bench.get('generated_at', ''))[:16].replace('T', ' ')}")
+if bench:
+    st.caption(f"Split **{split}** · N = {bench.get('n_questions', '?')} questions · LLM: {bench.get('llm', 'none')} · "
+               f"generated {str(bench.get('generated_at', ''))[:16].replace('T', ' ')}")
 
 
 def pct(m: dict[str, Any]) -> str:

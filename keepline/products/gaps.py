@@ -16,7 +16,8 @@ from keepline.contracts import AreaRisk, Fact, FactKind, GapQuestion, Verificati
 
 from keepline.products._common import (
     CRITICAL_KINDS,
-    STRONG_EXPERTISE,
+    is_strong,
+    looks_like_fact,
     StoreLike,
     _safe,
     has_reason,
@@ -49,7 +50,7 @@ def _person_facts(store: StoreLike, person_id: str, areas: set[str]) -> list[Fac
             if f.id not in seen:
                 seen.add(f.id)
                 extra.append(f)
-    return own + extra
+    return [f for f in own + extra if looks_like_fact(f.text)]
 
 
 def _candidates(store: StoreLike, person_id: str, facts: list[Fact], areas: set[str]) -> list[tuple[str, GapQuestion]]:
@@ -105,7 +106,7 @@ def gap_questions(
 
         risks = risk_map(store, today or DEMO_TODAY, with_trend=False)
     risk_by_area = {r.area_id: r.risk for r in risks}
-    held = {e.area_id for e in _safe(lambda: store.expertise(person_id=person_id)) or [] if e.score >= STRONG_EXPERTISE}
+    held = {e.area_id for e in _safe(lambda: store.expertise(person_id=person_id)) or [] if is_strong(e)}
     facts = _person_facts(store, person_id, held)
     ranked: list[GapQuestion] = []
     seen: set[str] = set()

@@ -29,7 +29,7 @@ from keepline.contracts import Area, Fact, SourceDoc, Visibility
 from keepline.retrieval.text import tokenize
 
 INDEX_PATH = MEMORY_DIR / "search_index.pkl"
-_INDEX_VERSION = 3
+_INDEX_VERSION = 4
 
 
 @dataclass
@@ -71,7 +71,7 @@ class SearchIndex:
     """BM25 over docs + facts with as_of / permission filters. Build once, ``save()``, then ``load()``."""
 
     K1 = 1.2
-    B = 0.75
+    B = 0.6
     EXPANSION_WEIGHT = 0.3
     RECENCY_WEIGHT = 0.15  # max multiplicative boost for brand-new entries
     RECENCY_HALF_LIFE_DAYS = 120.0
@@ -106,32 +106,38 @@ class SearchIndex:
         fact_participants = fact_participants or {}
         doc_areas = doc_areas or {}
         by_doc = {d.id: d for d in docs}
+        roots = thread_roots(docs)
         entries: list[_Entry] = []
+        index_texts: list[str] = []
         for d in docs:
-            entries.append(
-                _Entry(
-                    doc_id=d.id,
-                    fact_id=None,
-                    text=f"{d.title}\n{d.text}" if d.title else d.text,
-                    source_type=str(d.source_type),
-                    timestamp=d.timestamp,
-                    author_id=d.author_id,
-                    area_id=(doc_areas.get(d.id) or [None])[0],
-                    url=d.url,
-                    title=d.title,
-                    visibility=str(d.visibility),
-                    participants=frozenset(d.participants),
-                    is_current=True,
+            ctx = _context(d, roots, by_doc)
+            for passage in passages(d):
+                entries.append(
+                    _Entry(
+                        doc_id=d.id,
+                        fact_id=None,
+                        text=passage,
+                        source_type=str(d.source_type),
+                        timestamp=d.timestamp,
+                        author_id=d.author_id,
+                        area_id=(doc_areas.get(d.id) or [None])[0],
+                        url=d.url,
+                        title=d.title,
+                        visibility=str(d.visibility),
+                        participants=frozenset(d.participants),
+                        is_current=True,
+                    )
                 )
-            )
+                index_texts.append(f"{passage}\n{ctx}" if ctx else passage)
         for f in facts:
             src = by_doc.get(f.source_doc_ids[0]) if f.source_doc_ids else None
             ts = f.learned_at or datetime.combine(f.valid_from, datetime.min.time())
+            text = f.text if not f.subject or f.subject.lower() in f.text.lower() else f"{f.subject}: {f.text}"
             entries.append(
                 _Entry(
                     doc_id=f.source_doc_ids[0] if f.source_doc_ids else "",
                     fact_id=f.id,
-                    text=f.text if not f.subject or f.subject.lower() in f.text.lower() else f"{f.subject}: {f.text}",
+                    text=text,
                     source_type=str(src.source_type) if src else "doc",
                     timestamp=ts,
                     author_id=f.stated_by,
@@ -143,17 +149,19 @@ class SearchIndex:
                     is_current=f.is_current,
                 )
             )
-        self._index(entries)
+            ctx = _context(src, roots, by_doc) if src else ""
+            index_texts.append(f"{text}\n{ctx}" if ctx else text)
+        self._index(entries, index_texts)
         self._index_areas(areas)
         return self
 
-    def _index(self, entries: list[_Entry]) -> None:
+    def _index(self, entries: list[_Entry], index_texts: Sequence[str] | None = None) -> None:
         self.entries = entries
         n = len(entries)
         tfs: dict[str, list[tuple[int, int]]] = defaultdict(list)
         lens = np.zeros(n, dtype=np.float32)
         for i, e in enumerate(entries):
-            toks = tokenize(e.text)
+            toks = tokenize(index_texts[i] if index_texts is not None else e.text)
             lens[i] = len(toks)
             for t, c in sorted(Counter(toks).items()):
                 tfs[t].append((i, c))
@@ -305,6 +313,44 @@ class SearchIndex:
                 )
             )
         return hits
+
+
+PASSAGE_CHARS = 250
+
+
+def passages(d: SourceDoc) -> list[str]:
+    """Long docs (wikis, long emails) are indexed as ~600-char passages so one relevant bullet is not drowned by
+    BM25 length normalisation; each passage keeps the title for context. Short docs stay whole."""
+    head = f"{d.title}\n" if d.title else ""
+    if len(d.text) <= PASSAGE_CHARS * 1.5:
+        return [head + d.text]
+    out, buf = [], ""
+    for line in d.text.splitlines():
+        if buf and len(buf) + len(line) > PASSAGE_CHARS:
+            out.append(head + buf.strip())
+            buf = ""
+        buf += line + "\n"
+    if buf.strip():
+        out.append(head + buf.strip())
+    return out
+
+
+def thread_roots(docs: Sequence[SourceDoc]) -> dict[str, str]:
+    """doc id -> id of the first message in its thread (replies inherit the question's words for recall)."""
+    first: dict[str, str] = {}
+    out: dict[str, str] = {}
+    for d in sorted(docs, key=lambda d: (d.timestamp, d.id)):
+        if d.thread_id:
+            root = first.setdefault(d.thread_id, d.id)
+            if root != d.id:
+                out[d.id] = root
+    return out
+
+
+def _context(d: SourceDoc | None, roots: dict[str, str], by_doc: dict[str, SourceDoc]) -> str:
+    if d is None or d.id not in roots or roots[d.id] not in by_doc:
+        return ""
+    return by_doc[roots[d.id]].text[:300]
 
 
 def load_default_index(path: Path | str = INDEX_PATH) -> SearchIndex:

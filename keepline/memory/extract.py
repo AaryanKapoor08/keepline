@@ -328,7 +328,7 @@ COMMENT_LINE = re.compile(
 )
 META_LINE = re.compile(
     r"^\s*(#+\s|(reporter|assignee|priority|status|raised from|comments|last updated|from|to|cc|bcc|subject|date|"
-    r"labels?|component|created|updated)\s*:|\[[A-Z][A-Z0-9]+-\d+\]\s)",
+    r"labels?|component|created|updated)\s*:|\[[A-Z][A-Z0-9]+-\d+\]\s|(raised|moved|escalated) from #)",
     re.I,
 )
 META_KV = re.compile(r"\b\w+:\s[^|]{1,60}\|\s*\w+:")
@@ -337,7 +337,7 @@ OWNER_LINE = re.compile(
 )
 DISCOURSE_PREFIX = re.compile(
     r"^(?:(?:heads[- ]up|fyi|reminder|note|quick note|side note|short version|pro tip|psa|tl;?dr|ps|important|"
-    r"warning|for the record|just so you know|context|btw|update|also)\b[^:]{0,50}:|(?:fyi|btw|also|so)\b,?)\s*",
+    r"warning|for the record|just so you know|context|btw|update|also)\b[^:\d]{0,40}:(?=\s)|(?:fyi|btw|also|so)\b,?)\s*",
     re.I,
 )
 

@@ -27,6 +27,21 @@ from keepline.contracts import (
 # An expertise score at or above this counts as "strong evidence" (drives bus factor). Chosen so that a person who
 # has closed a handful of tickets *and* discussed the area regularly clears it, while a one-off commenter does not.
 STRONG_EXPERTISE = 0.35
+# "Doing > talking": strong evidence also needs hands-on work (closed tickets) or a body of stated facts, so a
+# manager who asks about everything, or a newcomer who chats a lot, does not count as a second holder.
+MIN_TICKETS_CLOSED = 2
+MIN_FACTS_STATED = 8
+
+
+def is_strong(e: Expertise) -> bool:
+    """True if this is strong evidence that the person *holds* the area (counts toward the bus factor)."""
+    return (
+        e.enough_data
+        and e.score >= STRONG_EXPERTISE
+        and (e.n_tickets_closed >= MIN_TICKETS_CLOSED or e.n_facts_stated >= MIN_FACTS_STATED)
+    )
+
+
 # Planning horizon (days) over which a known departure date decays from "certain" to "background hazard".
 DEPARTURE_HORIZON_DAYS = 400.0
 # Background departure hazard when HR has no date. Deliberately the same for everyone: we never score individuals.
@@ -181,8 +196,18 @@ def redact_secrets(text: str) -> str:
     return _SECRET.sub(lambda m: (m.group(1) + ": [redacted]") if m.group(1) else "[redacted]", text)
 
 
-def short_title(fact: Fact, n: int = 70) -> str:
-    base = fact.subject or fact.text
+_CHATTER = re.compile(r"^(standup\b|@\w+\s+(got a sec|quick q)|thanks\b|ok\b|lol\b)", re.I)
+
+
+def looks_like_fact(text: str) -> bool:
+    """Filter extraction noise before it reaches a product: questions, standup chatter and fragments are not facts."""
+    t = " ".join(text.split())
+    return len(t) >= 20 and not t.endswith("?") and not _CHATTER.search(t)
+
+
+def short_title(fact: Fact, n: int = 90) -> str:
+    """Readable one-liner. The fact text reads better than extracted subjects, which are often a single noun."""
+    base = fact.text if len(fact.text) >= 12 else (fact.subject or fact.text)
     base = " ".join(base.split()).rstrip(".")
     return base if len(base) <= n else base[: n - 1].rsplit(" ", 1)[0] + "…"
 

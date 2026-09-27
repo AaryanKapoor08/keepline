@@ -1,0 +1,13 @@
+# Streamlit-in-Snowflake package spec (Snowflake Anaconda channel).
+# https://docs.snowflake.com/en/developer-guide/streamlit/additional-features#label-streamlit-install-packages
+name: keepline_sis
+channels:
+  - snowflake
+dependencies:
+  - python=3.11
+  - streamlit>=1.40      # st.navigation (multipage) used by app/Home.py
+  - snowflake-snowpark-python
+  - pandas
+  - numpy
+  - altair
+  - pyyaml

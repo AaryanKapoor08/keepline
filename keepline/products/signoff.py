@@ -25,7 +25,12 @@ def item_key(item: HandoffItem) -> str:
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
 
 
-def load_all(path: Path = SIGNOFF_PATH) -> dict[str, Any]:
+def _p(path: Path | None) -> Path:
+    return path or SIGNOFF_PATH  # resolved at call time so tests / deployments can repoint it
+
+
+def load_all(path: Path | None = None) -> dict[str, Any]:
+    path = _p(path)
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
@@ -39,11 +44,11 @@ def _save_all(data: dict[str, Any], path: Path) -> None:
     tmp.replace(path)
 
 
-def person_state(person_id: str, path: Path = SIGNOFF_PATH) -> dict[str, Any]:
+def person_state(person_id: str, path: Path | None = None) -> dict[str, Any]:
     return load_all(path).get(person_id, {"items": {}, "signed_off": False, "signed_off_at": None})
 
 
-def set_item(person_id: str, key: str, status: str, correction: str | None = None, path: Path = SIGNOFF_PATH) -> None:
+def set_item(person_id: str, key: str, status: str, correction: str | None = None, path: Path | None = None) -> None:
     if status not in STATUSES:
         raise ValueError(f"unknown status {status!r}")
     data = load_all(path)
@@ -51,25 +56,25 @@ def set_item(person_id: str, key: str, status: str, correction: str | None = Non
     st["items"][key] = {"status": status, "correction": correction, "at": datetime.now().isoformat(timespec="seconds")}
     # Any change after sign-off re-opens the pack: the signature must cover what is actually in it.
     st["signed_off"], st["signed_off_at"] = False, None
-    _save_all(data, path)
+    _save_all(data, _p(path))
 
 
-def sign_off(person_id: str, path: Path = SIGNOFF_PATH, when: datetime | None = None) -> datetime:
+def sign_off(person_id: str, path: Path | None = None, when: datetime | None = None) -> datetime:
     data = load_all(path)
     st = data.setdefault(person_id, {"items": {}, "signed_off": False, "signed_off_at": None})
     when = when or datetime.now()
     st["signed_off"], st["signed_off_at"] = True, when.isoformat(timespec="seconds")
-    _save_all(data, path)
+    _save_all(data, _p(path))
     return when
 
 
-def reset(person_id: str, path: Path = SIGNOFF_PATH) -> None:
+def reset(person_id: str, path: Path | None = None) -> None:
     data = load_all(path)
     data.pop(person_id, None)
-    _save_all(data, path)
+    _save_all(data, _p(path))
 
 
-def apply_state(pack: HandoffPack, path: Path = SIGNOFF_PATH) -> HandoffPack:
+def apply_state(pack: HandoffPack, path: Path | None = None) -> HandoffPack:
     """Overlay persisted review statuses/corrections and the sign-off onto a freshly built pack (in place)."""
     st = person_state(pack.person_id, path)
     for it in pack.items:

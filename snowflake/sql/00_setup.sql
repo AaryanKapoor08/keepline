@@ -12,7 +12,7 @@
 --
 -- Layout
 --   KEEPLINE.RAW   landing zone: work-tool exports exactly as received (VARIANT), never edited
---   KEEPLINE.CORE  the versioned, receipt-backed memory graph (people, areas, source_docs, facts, edges ...)
+--   KEEPLINE.CORE  the versioned, receipt-backed memory graph (people, areas, documents, facts, edges ...)
 --   KEEPLINE.APP   what the product reads: risk snapshots, handoff sign-offs, semantic view, agent, Streamlit
 --
 -- Roles

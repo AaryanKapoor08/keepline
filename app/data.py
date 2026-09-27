@@ -10,13 +10,15 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import os
+import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 import streamlit as st
 
-from keepline.config import CORPUS_DIR, DEMO_TODAY, MEMORY_DB, MEMORY_DIR, ORG_DIR, RESULTS_DIR
+from keepline.config import CORPUS_DIR, DEMO_TODAY, MEMORY_DB, MEMORY_DIR, ORG_DIR, RESULTS_DIR, ROOT
 from keepline.contracts import AreaRisk, HandoffPack, OnboardingBrief, Person
 
 log = logging.getLogger(__name__)
@@ -51,10 +53,30 @@ def pipeline_status() -> dict[str, bool]:
 
 @st.cache_resource(show_spinner=False, max_entries=2)
 def _store_for(version: float) -> Any:
+    s = _snowflake_store() or _local_store()
+    return s if s.areas() else None
+
+
+def _local_store() -> Any:
     from keepline.memory.store import MemoryStore
 
-    s = MemoryStore(MEMORY_DB)
-    return s if s.areas() else None
+    return MemoryStore(MEMORY_DB)
+
+
+def _snowflake_store() -> Any:
+    """In Streamlit-in-Snowflake (KEEPLINE_BACKEND=snowflake), mirror query-log/review writes to KEEPLINE.CORE."""
+    if os.environ.get("KEEPLINE_BACKEND") != "snowflake":
+        return None
+    try:
+        from snowflake.snowpark.context import get_active_session
+
+        sys.path.insert(0, str(ROOT / "snowflake" / "streamlit"))
+        from snowflake_store import make_store  # type: ignore[import-not-found]
+
+        return make_store(get_active_session(), MEMORY_DB)
+    except Exception as e:  # noqa: BLE001 - fall back to the local snapshot
+        log.warning("Snowflake-mirrored store unavailable, using local snapshot: %s", e)
+        return None
 
 
 def store() -> Any:

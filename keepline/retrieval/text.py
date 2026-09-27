@@ -71,10 +71,22 @@ def content_set(text: str) -> frozenset[str]:
     return frozenset(tokenize(text))
 
 
+_NOISE_NUM = re.compile(r"\b[A-Z][A-Z0-9]*-\d+\b|\S+@\S+|https?://\S+|\b\d{4}-\d{2}-\d{2}\b|\b20\d\d\b|\b\d{1,2}:\d{2}\b")
+_WORD_NUM = {w: str(i) for i, w in enumerate(
+    "zero one two three four five six seven eight nine ten eleven twelve".split())}
+_WORD_NUM.update({w: str(i + 1) for i, w in enumerate(
+    "first second third fourth fifth sixth seventh eighth ninth tenth".split())})
+
+
 @lru_cache(maxsize=65536)
 def numbers(text: str) -> frozenset[str]:
-    """Numeric values mentioned ('the 1st and 15th' -> {'1', '15'}); used to detect changed values."""
-    return frozenset(m.group(1) for m in _NUM_RE.finditer(text))
+    """Numeric values mentioned ('the 1st and 15th' -> {'1', '15'}; 'five days' -> {'5'}); ticket ids, emails,
+    urls, ISO dates and years are ignored so they never look like a changed value."""
+    times = {f"{int(h)}:{m}" for h, m in re.findall(r"\b(\d{1,2}):(\d{2})\b", text)}  # "06:15" is one value
+    clean = _NOISE_NUM.sub(" ", text)
+    out = {m.group(1).lstrip("0") or "0" for m in _NUM_RE.finditer(clean)} | times
+    out.update(_WORD_NUM[w] for w in re.findall(r"[a-z]+", clean.lower()) if w in _WORD_NUM and w != "second")
+    return frozenset(out)
 
 
 def jaccard(a: frozenset[str] | set[str], b: frozenset[str] | set[str]) -> float:

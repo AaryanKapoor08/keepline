@@ -79,8 +79,10 @@ def score(session, today, exclude_person):
                COUNT_IF(kind IN ('access', 'vendor_contact', 'recurring_task')) AS n_dependencies
         FROM KEEPLINE.CORE.FACTS WHERE valid_to IS NULL AND superseded_by IS NULL GROUP BY area_id""").collect()}
     incidents = {r["AREA_ID"]: r["N"] for r in session.sql("""
-        SELECT area_id, COUNT(*) AS n FROM KEEPLINE.CORE.SOURCE_DOCS
-        WHERE source_type = 'ticket' AND (meta:type::STRING = 'incident' OR title ILIKE '%incident%' OR title ILIKE '%outage%')
+        SELECT area_id, COUNT(*) AS n FROM KEEPLINE.CORE.DOCUMENTS
+        WHERE source_type = 'ticket'
+          AND (LOWER(meta_json:priority::STRING) IN ('high', 'highest', 'critical')
+               OR title ILIKE '%incident%' OR title ILIKE '%outage%')
         GROUP BY area_id""").collect()}
     asks = {r["AREA_ID"]: r["N"] for r in session.sql(
         "SELECT area_id, COUNT(*) AS n FROM KEEPLINE.CORE.QUERY_LOG GROUP BY area_id").collect()}
@@ -138,13 +140,20 @@ def score(session, today, exclude_person):
 
 
 def run(session, today, exclude_person):
+    from snowflake.snowpark.types import FloatType, LongType, StringType, StructField, StructType
+
     today = today or date.today()
     rows = score(session, today, exclude_person or None)
-    cols = ["AREA_ID", "AREA_NAME", "IMPORTANCE", "REDUNDANCY", "DEPARTURE_LIKELIHOOD", "RISK", "BUS_FACTOR",
-            "AT_RISK_PERSON_ID", "COUNTDOWN_DAYS", "N_FACTS", "N_LANDMINES", "EXPLANATION"]
-    if not rows:
-        return session.sql("SELECT " + ", ".join(f"NULL AS {c}" for c in cols) + " WHERE FALSE")
-    return session.create_dataframe(rows, schema=cols)
+    # Explicit schema: columns that are NULL in every row (e.g. no countdown) must still type-check.
+    schema = StructType([
+        StructField("AREA_ID", StringType()), StructField("AREA_NAME", StringType()),
+        StructField("IMPORTANCE", FloatType()), StructField("REDUNDANCY", FloatType()),
+        StructField("DEPARTURE_LIKELIHOOD", FloatType()), StructField("RISK", FloatType()),
+        StructField("BUS_FACTOR", LongType()), StructField("AT_RISK_PERSON_ID", StringType()),
+        StructField("COUNTDOWN_DAYS", LongType()), StructField("N_FACTS", LongType()),
+        StructField("N_LANDMINES", LongType()), StructField("EXPLANATION", StringType()),
+    ])
+    return session.create_dataframe(rows, schema=schema)
 $$;
 
 -- Baseline snapshot + one what-if per person with a known future departure. Cortex Analyst reads this.
@@ -217,8 +226,8 @@ def _citations(session, doc_ids):
     if not doc_ids:
         return []
     rows = _q(session, """
-        SELECT id, author_id, TO_VARCHAR(timestamp, 'YYYY-MM-DD"T"HH24:MI:SS') AS ts, url, LEFT(text, 280) AS quote
-        FROM KEEPLINE.CORE.SOURCE_DOCS WHERE ARRAY_CONTAINS(id::VARIANT, PARSE_JSON(?))""", [json.dumps(doc_ids)])
+        SELECT id, author_id, TO_VARCHAR(ts, 'YYYY-MM-DD"T"HH24:MI:SS') AS ts, url, LEFT(text, 280) AS quote
+        FROM KEEPLINE.CORE.DOCUMENTS WHERE ARRAY_CONTAINS(id::VARIANT, PARSE_JSON(?))""", [json.dumps(doc_ids)])
     return [{"doc_id": r["ID"], "author_id": r["AUTHOR_ID"], "timestamp": r["TS"], "url": r["URL"], "quote": r["QUOTE"]}
             for r in rows]
 
@@ -242,13 +251,14 @@ def run(session, person_id, today):
         return {"error": f"unknown person {person_id}"}
     items, gaps = [], []
     facts = _q(session, """
-        SELECT id, text, kind, area_id, source_doc_ids, quote, epistemic
+        SELECT id, text, kind, area_id, source_doc_ids_json, quote, epistemic
         FROM KEEPLINE.CORE.FACTS
         WHERE stated_by = ? AND valid_to IS NULL AND superseded_by IS NULL AND review_status <> 'rejected'
         ORDER BY kind, area_id""", [person_id])
     owners = {}
     for f in facts:
-        doc_ids = json.loads(f["SOURCE_DOC_IDS"]) if isinstance(f["SOURCE_DOC_IDS"], str) else (f["SOURCE_DOC_IDS"] or [])
+        raw_ids = f["SOURCE_DOC_IDS_JSON"]
+        doc_ids = json.loads(raw_ids) if isinstance(raw_ids, str) else (raw_ids or [])
         area = f["AREA_ID"]
         if area not in owners:
             owners[area] = _suggested_owner(session, area, person_id)
@@ -267,15 +277,15 @@ def run(session, person_id, today):
 
     # Unresolved work: open tickets assigned to them + promised follow-ups in their recent messages.
     for t in _q(session, """
-        SELECT id, title, area_id FROM KEEPLINE.CORE.SOURCE_DOCS
-        WHERE source_type = 'ticket' AND meta:assignee::STRING = ?
-          AND COALESCE(LOWER(meta:status::STRING), 'open') NOT IN ('closed', 'done', 'resolved')""", [person_id]):
+        SELECT id, title, area_id FROM KEEPLINE.CORE.DOCUMENTS
+        WHERE source_type = 'ticket' AND ticket_assignee = ?
+          AND COALESCE(LOWER(ticket_status), 'open') NOT IN ('closed', 'done', 'resolved')""", [person_id]):
         items.append({"section": "unresolved_work", "title": f"Open ticket: {t['TITLE']}", "detail": t["TITLE"],
                       "area_id": t["AREA_ID"], "fact_ids": [], "citations": _citations(session, [t["ID"]]),
                       "suggested_owner_id": owners.get(t["AREA_ID"], (None,))[0], "status": "pending_review"})
     for m in _q(session, """
-        SELECT id, text, area_id FROM KEEPLINE.CORE.SOURCE_DOCS
-        WHERE author_id = ? AND timestamp >= DATEADD('day', -30, ?::DATE)""", [person_id, today.isoformat()]):
+        SELECT id, text, area_id FROM KEEPLINE.CORE.DOCUMENTS
+        WHERE author_id = ? AND ts >= DATEADD('day', -30, ?::DATE)""", [person_id, today.isoformat()]):
         hit = FOLLOWUP.search(m["TEXT"] or "")
         if hit:
             items.append({"section": "unresolved_work", "title": "Promised follow-up",
@@ -285,7 +295,7 @@ def run(session, person_id, today):
     # Areas where the agent had to abstain or route: the questions nobody could answer from the record.
     for r in _q(session, """
         SELECT area_id, COUNT(*) AS n FROM KEEPLINE.CORE.QUERY_LOG
-        WHERE action IN ('abstain', 'route') AND ARRAY_CONTAINS(?::VARIANT, route_to) GROUP BY area_id""", [person_id]):
+        WHERE action IN ('abstain', 'route') AND ARRAY_CONTAINS(?::VARIANT, route_to_json) GROUP BY area_id""", [person_id]):
         gaps.append({"person_id": person_id, "area_id": r["AREA_ID"], "fact_ids": [],
                      "question": f"Colleagues asked about {r['AREA_ID']} {r['N']} times and we had no receipt. What should they know?",
                      "reason": f"agent abstained/routed {r['N']}x", "priority": min(1.0, 0.5 + 0.1 * r["N"])})

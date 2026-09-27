@@ -5,25 +5,31 @@ its value, the old fact is not deleted -- it is *closed* (``valid_to`` = new ``v
 (``superseded_by`` / ``supersedes``), so the agent can say "this replaced X on <date>" and never cites a dead
 fact as current. When two people disagree without any update signal, both are kept and the weaker one is
 marked ``CONTRADICTED`` -- Keepline surfaces the conflict instead of silently picking a winner.
+
+Similarity is idf-weighted over the fact set: words that appear in many facts (verbal tics, boilerplate like
+"quick note so it's written down") carry little weight, so two different facts that share a preamble are not
+mistaken for versions of one another.
 """
 
 from __future__ import annotations
 
-from collections import defaultdict
+import math
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
 from keepline.contracts import Fact, FactKind, Verification
-from keepline.memory.extract import NEGATION, UPDATE_CUE
-from keepline.retrieval.text import containment, content_set, jaccard, numbers
+from keepline.memory.extract import UPDATE_CUE
+from keepline.retrieval.text import content_set, numbers
 
 # Kinds that describe "how a thing behaves" can supersede each other (a landmine can be restated as a
 # rule/decision); identity-like kinds only supersede within themselves.
 _BEHAVIOUR = frozenset({FactKind.LANDMINE, FactKind.PROCEDURE, FactKind.RECURRING_TASK, FactKind.DECISION, FactKind.FACT})
 
-DUP_JACCARD = 0.6
+DUP_SIMILARITY = 0.6
 LINK_SIMILARITY = 0.3
 STRONG_SIMILARITY = 0.5
+MIN_TEXT_SIMILARITY = 0.2
 CONFLICT_WINDOW_DAYS = 30
 
 
@@ -39,48 +45,64 @@ def compatible(a: FactKind, b: FactKind) -> bool:
     return a == b or (a in _BEHAVIOUR and b in _BEHAVIOUR)
 
 
-def _subject_set(f: Fact) -> frozenset[str]:
-    return content_set(f.subject or "")
+class _Sim:
+    """idf-weighted overlap between facts (numbers excluded so a changed value still matches)."""
+
+    def __init__(self, facts: Sequence[Fact]) -> None:
+        self.terms: dict[str, frozenset[str]] = {}
+        self.subj: dict[str, frozenset[str]] = {}
+        df: Counter[str] = Counter()
+        for f in facts:
+            t = frozenset(x for x in content_set(f.text) if not x[:1].isdigit())
+            self.terms[f.id] = t
+            self.subj[f.id] = content_set(f.subject or "")
+            df.update(t)
+        n = max(1, len(facts))
+        self.w = {t: math.log(1 + n / c) for t, c in df.items()}
+
+    def _wj(self, a: frozenset[str], b: frozenset[str]) -> float:
+        if not a or not b:
+            return 0.0
+        inter = sum(self.w.get(t, 1.0) for t in a & b)
+        union = sum(self.w.get(t, 1.0) for t in a | b)
+        return inter / union if union else 0.0
+
+    def text(self, a: Fact, b: Fact) -> float:
+        return self._wj(self.terms[a.id], self.terms[b.id])
+
+    def __call__(self, a: Fact, b: Fact) -> float:
+        t = self.text(a, b)
+        sa, sb = self.subj[a.id], self.subj[b.id]
+        return 0.7 * t + 0.3 * self._wj(sa, sb) if sa and sb else t
 
 
-def similarity(old: Fact, new: Fact) -> float:
-    """Blend of subject overlap and statement overlap; numbers are excluded so a changed value still matches."""
-    t_old = frozenset(t for t in content_set(old.text) if not t[:1].isdigit())
-    t_new = frozenset(t for t in content_set(new.text) if not t[:1].isdigit())
-    text_sim = max(jaccard(t_old, t_new), 0.8 * containment(t_old, t_new) if len(t_old) >= 3 else 0.0)
-    s_old, s_new = _subject_set(old), _subject_set(new)
-    subj_sim = jaccard(s_old, s_new) if s_old and s_new else 0.0
-    return 0.6 * text_sim + 0.4 * subj_sim if s_old and s_new else text_sim
+def _cue(f: Fact) -> bool:
+    return bool(UPDATE_CUE.search(f.quote or f.text))
 
 
-def is_near_duplicate(old: Fact, new: Fact) -> bool:
-    if numbers(old.text) != numbers(new.text):
-        return False
-    if bool(NEGATION.search(old.text)) != bool(NEGATION.search(new.text)):
-        return False
-    return jaccard(content_set(old.text), content_set(new.text)) >= DUP_JACCARD and not UPDATE_CUE.search(
-        new.text.replace(old.text, "")
-    )
+def is_near_duplicate(old: Fact, new: Fact, sim: _Sim) -> bool:
+    return numbers(old.text) == numbers(new.text) and sim.text(old, new) >= DUP_SIMILARITY
 
 
-def update_signal(old: Fact, new: Fact, sim: float) -> bool:
-    """New statement explicitly updates or changes the value of the old one.
+def update_signal(old: Fact, new: Fact, s: float, text_sim: float) -> bool:
+    """New statement updates the old one.
 
     A changed value ("the 1st" -> "the 1st and 15th") links at moderate similarity; a bare cue word ("now",
     "also") needs a much closer match, because two different rules about one system often share a cue.
     """
+    if text_sim < MIN_TEXT_SIMILARITY:  # sharing only a subject ("CoreLink") is not being the same statement
+        return False
     n_old, n_new = numbers(old.text), numbers(new.text)
-    changed_numbers = bool(n_old and n_new and n_old != n_new) and not (n_new < n_old)  # subset = restatement
-    cue = bool(UPDATE_CUE.search(new.text))
-    if changed_numbers:
-        return sim >= LINK_SIMILARITY
-    return cue and sim >= STRONG_SIMILARITY and not bool(n_old and not n_new)
+    if n_old and n_new and n_old != n_new and not (n_new < n_old):  # a strict subset is a partial restatement
+        return s >= LINK_SIMILARITY
+    if old.kind == new.kind and old.kind not in _BEHAVIOUR:  # "our new rep is ...", "X owns it now"
+        return _cue(new) and s >= LINK_SIMILARITY
+    return _cue(new) and s >= STRONG_SIMILARITY and not (n_old and not n_new)
 
 
 def disagreement(old: Fact, new: Fact) -> bool:
     n_old, n_new = numbers(old.text), numbers(new.text)
-    negation_flip = bool(NEGATION.search(old.text)) != bool(NEGATION.search(new.text))
-    return (bool(n_old and n_new) and n_old != n_new) or negation_flip
+    return bool(n_old and n_new) and n_old != n_new
 
 
 def merge_into(target: Fact, dup: Fact) -> None:
@@ -93,6 +115,8 @@ def merge_into(target: Fact, dup: Fact) -> None:
         target.area_id = dup.area_id
     if target.subject is None:
         target.subject = dup.subject
+    if target.kind == FactKind.FACT and dup.kind != FactKind.FACT:
+        target.kind = dup.kind  # a restatement with a clearer cue sharpens the kind
 
 
 def supersede(old: Fact, new: Fact) -> None:
@@ -109,47 +133,34 @@ def supersede(old: Fact, new: Fact) -> None:
 def link_facts(facts: Sequence[Fact]) -> LinkResult:
     """Process facts chronologically; each new fact is merged, supersedes, conflicts with, or joins its area."""
     ordered = sorted(facts, key=lambda f: (f.valid_from, f.learned_at or 0, f.id))  # type: ignore[arg-type]
+    sim = _Sim(ordered)
     by_area: dict[str | None, list[Fact]] = defaultdict(list)
     kept: list[Fact] = []
     res = LinkResult(facts=kept)
     for f in ordered:
         pool = by_area[f.area_id]
-        dup = _best(pool, f, lambda o: compatible(o.kind, f.kind) and is_near_duplicate(o, f), prefer_current=True)
+        scored = sorted(((sim(o, f), o) for o in pool if compatible(o.kind, f.kind)),
+                        key=lambda x: (-x[0], -int(x[1].is_current), x[1].id))
+        dup = next((o for s, o in scored if s >= DUP_SIMILARITY * 0.8 and is_near_duplicate(o, f, sim)), None)
         if dup is not None:
-            merge_into(dup, f)
+            merge_into(dup, f)  # a stale restatement of a superseded fact stays attached to the old version
             res.merged += 1
             continue
-        cand = _best(
-            pool, f, lambda o: o.is_current and compatible(o.kind, f.kind) and similarity(o, f) >= LINK_SIMILARITY
-        )
+        cand = next(((s, o) for s, o in scored if o.is_current and s >= LINK_SIMILARITY), None)
         if cand is not None:
-            sim = similarity(cand, f)
-            if update_signal(cand, f, sim) and (cand.kind == f.kind or UPDATE_CUE.search(f.text)):
-                supersede(cand, f)
+            s, o = cand
+            if update_signal(o, f, s, sim.text(o, f)) and (o.kind == f.kind or _cue(f)):
+                supersede(o, f)
                 res.superseded += 1
-            elif disagreement(cand, f) and cand.stated_by != f.stated_by and (
-                (f.valid_from - cand.valid_from).days <= CONFLICT_WINDOW_DAYS
+            elif disagreement(o, f) and o.stated_by != f.stated_by and (
+                (f.valid_from - o.valid_from).days <= CONFLICT_WINDOW_DAYS
             ):
-                weaker = cand if cand.confidence <= f.confidence else f
+                weaker = o if o.confidence <= f.confidence else f
                 weaker.verification = Verification.CONTRADICTED
                 res.conflicts.append(
-                    {"fact_id_a": cand.id, "fact_id_b": f.id, "area_id": f.area_id, "subject": f.subject or cand.subject,
+                    {"fact_id_a": o.id, "fact_id_b": f.id, "area_id": f.area_id, "subject": f.subject or o.subject,
                      "note": f"disagree without an update signal; weaker={weaker.id}"}
                 )
-            elif disagreement(cand, f) and sim >= STRONG_SIMILARITY:
-                supersede(cand, f)  # a later, different value from the same person / much later = the new state
-                res.superseded += 1
         pool.append(f)
         kept.append(f)
     return res
-
-
-def _best(pool: Sequence[Fact], f: Fact, pred: Any, prefer_current: bool = False) -> Fact | None:
-    best, best_key = None, None
-    for o in pool:
-        if not pred(o):
-            continue
-        key = (o.is_current if prefer_current else True, similarity(o, f), o.valid_from, o.id)
-        if best_key is None or key > best_key:
-            best, best_key = o, key
-    return best

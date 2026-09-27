@@ -5,10 +5,15 @@
     python snowflake/deploy.py --only sql           # just run sql/00..06 in order
     python snowflake/deploy.py --only load          # just (re)load data/org + data/corpus + data/memory
     python snowflake/deploy.py --resume-tasks       # also turn on the incremental extraction task graph
+    python snowflake/deploy.py --only extract --limit 200   # Cortex extraction over <= 200 docs (cost-bounded)
+    python snowflake/deploy.py --only extract --full        # ... over the whole corpus (deliberate, costs credits)
 
 Order for a full deploy (search services and the agent are built after data exists):
     sql 00,01,02,03,04,06 -> load (PUT/COPY -> NORMALIZE_RAW -> local graph) -> sql 05 (Cortex Search)
     -> semantic view (Cortex Analyst) -> agent (Cortex Agent) -> risk snapshot -> Streamlit-in-Snowflake
+Cortex extraction (AI_EXTRACT + AI_COMPLETE) is opt-in (--extract / --only extract) and bounded by --limit;
+the local graph (data/memory/keepline.db) already provides facts, so a default deploy spends no LLM credits.
+Tasks are created SUSPENDED; only --resume-tasks turns them on.
 
 Connection: ``keepline.snowflake_conn.connect()`` (SNOWFLAKE_ACCOUNT / SNOWFLAKE_USER / ... env vars).
 The data rule: everything is loaded into *this* account's internal stages and tables and never leaves it.
@@ -54,26 +59,35 @@ CORPUS_TABLES = {
     "interviews.jsonl": "RAW.INTERVIEWS",
 }
 ORG_TABLES = {"people.json": "RAW.ORG_PEOPLE", "areas.json": "RAW.ORG_AREAS"}
-# Local SQLite graph table (first name that exists wins) -> CORE table. People/areas/docs come from RAW.
-GRAPH_TABLES: dict[str, tuple[str, ...]] = {
-    "FACTS": ("facts", "fact"),
-    "EDGES": ("edges", "edge"),
-    "EXPERTISE": ("expertise",),
-    "QUERY_LOG": ("query_log", "queries"),
-    "REVIEW_EVENTS": ("review_events", "reviews"),
+# Local SQLite graph (keepline/memory/schema.sql) table -> CORE table of the same name. People, areas and
+# documents come from RAW via CORE.NORMALIZE_RAW (the Snowflake-native path); the rest is the graph.
+GRAPH_TABLES: dict[str, str] = {
+    "DOC_AREAS": "doc_areas",
+    "FACTS": "facts",
+    "EDGES": "edges",
+    "EXPERTISE": "expertise",
+    "CONFLICTS": "conflicts",
+    "QUERY_LOG": "query_log",
+    "QUERY_ABOUT": "query_about",
+    "REVIEW_EVENTS": "review_events",
 }
 POST_GRAPH_SQL = (
+    # Primary area per document = the local linker's best DOC_AREAS score (better than keyword fallback).
+    "UPDATE KEEPLINE.CORE.DOCUMENTS d SET area_id = x.area_id FROM ("
+    " SELECT doc_id, area_id FROM KEEPLINE.CORE.DOC_AREAS"
+    " QUALIFY ROW_NUMBER() OVER (PARTITION BY doc_id ORDER BY score DESC) = 1) x WHERE d.id = x.doc_id",
     # Facts inherit the owning team of whoever stated them (team-visibility access).
     "UPDATE KEEPLINE.CORE.FACTS f SET owner_team = p.team FROM KEEPLINE.CORE.PEOPLE p "
     "WHERE p.id = f.stated_by AND f.owner_team IS NULL",
-    # Non-public facts are visible to the participants of their receipts.
+    # Non-public facts are visible to their participants (carried from the receipts by the local engine).
     "MERGE INTO KEEPLINE.CORE.ACL t USING ("
-    " SELECT DISTINCT f.id AS object_id, a.person_id FROM KEEPLINE.CORE.FACTS f,"
-    " LATERAL FLATTEN(input => f.source_doc_ids) s JOIN KEEPLINE.CORE.ACL a ON a.object_id = s.value::STRING"
-    " WHERE f.visibility IN ('team', 'private')) s"
+    " SELECT DISTINCT f.id AS object_id, p.value::STRING AS person_id FROM KEEPLINE.CORE.FACTS f,"
+    " LATERAL FLATTEN(input => f.participants_json) p WHERE f.visibility IN ('team', 'private')) s"
     " ON t.object_id = s.object_id AND t.person_id = s.person_id"
     " WHEN NOT MATCHED THEN INSERT (object_id, person_id) VALUES (s.object_id, s.person_id)",
 )
+EXTRACT_MODEL = "claude-sonnet-4-5"
+DEFAULT_LIMIT = 200
 
 
 # --------------------------------------------------------------------------------------------------
@@ -248,8 +262,8 @@ def _graph_step(core_table: str, sqlite_table: str) -> Step:
         shared = [(c, t) for c, t in cols if c in set(df.columns)]
         if not shared:
             raise RuntimeError(f"no shared columns between sqlite {sqlite_table} and CORE.{core_table}")
-        names = ", ".join(c for c, _ in shared)
-        exprs = ", ".join(_cast(c, t) for c, t in shared)
+        names = ", ".join(f'"{c}"' for c, _ in shared)  # quoted: REVIEW_EVENTS has a column named AT
+        exprs = ", ".join(_cast(f'"{c}"', t) for c, t in shared)
         _exec(conn, f"INSERT OVERWRITE INTO KEEPLINE.CORE.{core_table} ({names}) "
                     f"SELECT {exprs} FROM KEEPLINE.RAW.{stage_table}")
         missing = sorted(set(df.columns) - {c for c, _ in shared})
@@ -306,22 +320,41 @@ def _agent_step() -> Step:
     return Step("agent", "Cortex Agent KEEPLINE.APP.KEEPLINE_AGENT from agent/keepline_agent.json", run)
 
 
+STREAMLIT_STAGE = "@KEEPLINE.APP.STREAMLIT_SRC"
+STREAMLIT_SUFFIXES = (".py", ".sql", ".json", ".yml", ".toml", ".svg", ".png", ".css")
+
+
+def streamlit_bundle() -> list[tuple[Path, str]]:
+    """(local file, stage sub-directory) for Streamlit-in-Snowflake, preserving the repo layout.
+
+    streamlit_app.py + environment.yml sit at the stage root; keepline/, app/, .streamlit/ and data/results/
+    keep their relative paths so the local app runs unchanged (see streamlit/streamlit_app.py).
+    """
+    files: list[tuple[Path, str]] = [(f, "") for f in sorted(STREAMLIT_DIR.glob("*")) if f.suffix in STREAMLIT_SUFFIXES]
+    for top in ("keepline", "app", ".streamlit", "data/results"):
+        base = ROOT / top
+        if not base.exists():
+            continue
+        for f in sorted(base.rglob("*")):
+            if f.is_file() and f.suffix in STREAMLIT_SUFFIXES and "__pycache__" not in f.parts:
+                files.append((f, f.parent.relative_to(ROOT).as_posix()))
+    return files
+
+
 def _streamlit_step() -> Step:
+    bundle = streamlit_bundle()
+
     def run(conn: Any) -> None:
-        target = "@KEEPLINE.APP.STREAMLIT_SRC"
-        for f in sorted(STREAMLIT_DIR.glob("*")):
-            if f.suffix in (".py", ".yml", ".toml"):
-                _exec(conn, f"PUT 'file://{f.as_posix()}' {target} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
-        # Ship the keepline package so products/* run next to the data (SnowflakeStore backend).
-        for d in sorted({p.parent for p in (ROOT / "keepline").rglob("*.py")}):
-            rel = d.relative_to(ROOT).as_posix()
-            _exec(conn, f"PUT 'file://{d.as_posix()}/*.py' {target}/{rel} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
-        _exec(conn, f"CREATE OR REPLACE STREAMLIT KEEPLINE.APP.KEEPLINE_STREAMLIT FROM '{target}' "
+        for f, sub in bundle:
+            target = f"{STREAMLIT_STAGE}/{sub}" if sub else STREAMLIT_STAGE
+            _exec(conn, f"PUT 'file://{f.resolve().as_posix()}' {target} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+        _exec(conn, f"CREATE OR REPLACE STREAMLIT KEEPLINE.APP.KEEPLINE_STREAMLIT FROM '{STREAMLIT_STAGE}' "
                     "MAIN_FILE = 'streamlit_app.py' QUERY_WAREHOUSE = KEEPLINE_WH "
                     "TITLE = 'Keepline' COMMENT = 'Keepline in Snowflake: data never leaves the account.'")
         _exec(conn, "GRANT USAGE ON STREAMLIT KEEPLINE.APP.KEEPLINE_STREAMLIT TO ROLE KEEPLINE_APP")
 
-    return Step("streamlit", "Streamlit-in-Snowflake KEEPLINE.APP.KEEPLINE_STREAMLIT (streamlit/ + keepline/)", run)
+    return Step("streamlit", f"Streamlit-in-Snowflake KEEPLINE.APP.KEEPLINE_STREAMLIT ({len(bundle)} files: "
+                             "streamlit/ + keepline/ + app/ + data/results/)", run)
 
 
 def _simple(group: str, title: str, *stmts: str) -> Step:
@@ -340,7 +373,16 @@ def _file_or_skip(path: Path, make: Callable[[Path], Step], steps: list[Step], s
         skipped.append(f"missing {path}")
 
 
-def build_plan(only: str = "all", resume_tasks: bool = False) -> tuple[list[Step], list[str]]:
+def _extract_step(limit: int | None) -> Step:
+    bound = "NULL" if limit is None else str(int(limit))
+    title = f"Cortex extraction: AI_EXTRACT + AI_COMPLETE over {'ALL queued' if limit is None else f'<= {bound}'} docs"
+    return _simple("extract", title,
+                   f"CALL KEEPLINE.CORE.EXTRACT_NEW_DOCS('{EXTRACT_MODEL}', {bound})",
+                   "CALL KEEPLINE.CORE.APPLY_SUPERSESSION()")
+
+
+def build_plan(only: str = "all", resume_tasks: bool = False, *, extract: bool = False,
+               limit: int | None = DEFAULT_LIMIT) -> tuple[list[Step], list[str]]:
     """Return (steps, skipped-notes). Pure: touches only the local filesystem."""
     steps: list[Step] = []
     skipped: list[str] = []
@@ -358,16 +400,17 @@ def build_plan(only: str = "all", resume_tasks: bool = False) -> tuple[list[Step
                              "CALL KEEPLINE.CORE.NORMALIZE_RAW()"))
         if MEMORY_DB.exists():
             present = _sqlite_tables(MEMORY_DB)
-            for core_table, candidates in GRAPH_TABLES.items():
-                hit = next((c for c in candidates if c in present), None)
-                if hit:
-                    steps.append(_graph_step(core_table, hit))
+            for core_table, sqlite_table in GRAPH_TABLES.items():
+                if sqlite_table in present:
+                    steps.append(_graph_step(core_table, sqlite_table))
                 else:
-                    skipped.append(f"sqlite has no table for CORE.{core_table} (tried {', '.join(candidates)})")
+                    skipped.append(f"sqlite has no table {sqlite_table} for CORE.{core_table}")
             steps.append(_simple("load", "post-graph: owner_team + fact ACL", *POST_GRAPH_SQL))
         else:
             skipped.append(f"missing {MEMORY_DB} (run: python -m keepline.memory.build); Cortex extraction can fill FACTS instead")
         _file_or_skip(MEMORY_DIR / "signoffs.json", _signoffs_step, steps, skipped)
+    if (extract and only == "all") or only == "extract":
+        steps.append(_extract_step(limit))
     if only in ("all", "search"):
         steps += [_sql_file_step(n, "search") for n in SQL_AFTER_LOAD]
     if want("analyst"):
@@ -382,7 +425,8 @@ def build_plan(only: str = "all", resume_tasks: bool = False) -> tuple[list[Step
     if resume_tasks or only == "tasks":
         steps.append(_simple("tasks", "resume task graph T_NORMALIZE -> T_EXTRACT -> T_SUPERSEDE + nightly risk",
                              "SELECT SYSTEM$TASK_DEPENDENTS_ENABLE('KEEPLINE.CORE.T_NORMALIZE')",
-                             "ALTER TASK KEEPLINE.APP.T_NIGHTLY_RISK RESUME"))
+                             "ALTER TASK KEEPLINE.APP.T_NIGHTLY_RISK RESUME",
+                             "ALTER TASK KEEPLINE.CORE.T_APPLY_REVIEWS RESUME"))
     return steps, skipped
 
 
@@ -390,13 +434,18 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--dry-run", action="store_true", help="print the plan; do not connect")
     ap.add_argument("--only", default="all",
-                    choices=["all", "sql", "load", "search", "analyst", "agent", "refresh", "streamlit", "tasks"])
+                    choices=["all", "sql", "load", "extract", "search", "analyst", "agent", "refresh", "streamlit",
+                             "tasks"])
     ap.add_argument("--resume-tasks", action="store_true", help="enable the incremental extraction task graph")
+    ap.add_argument("--extract", action="store_true", help="include Cortex extraction in a full deploy")
+    ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help="max docs per Cortex extraction run")
+    ap.add_argument("--full", action="store_true", help="extract over every queued doc (ignores --limit)")
     ap.add_argument("--continue-on-error", action="store_true")
     args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-    steps, skipped = build_plan(args.only, args.resume_tasks)
+    steps, skipped = build_plan(args.only, args.resume_tasks, extract=args.extract,
+                                limit=None if args.full else args.limit)
     print(f"Keepline -> Snowflake deploy plan ({len(steps)} steps, only={args.only}):")
     for k, s in enumerate(steps, 1):
         print(f"  {k:2d}. [{s.group}] {s.title}")
@@ -408,7 +457,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from keepline.snowflake_conn import connect
 
-    conn = connect()
+    conn = connect(database=None, schema=None)  # the first deploy creates the database
     failures = 0
     try:
         for k, s in enumerate(steps, 1):

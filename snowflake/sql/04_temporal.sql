@@ -63,11 +63,11 @@ BEGIN
            IFF(c.quote IS NOT NULL AND CONTAINS(LOWER(d.text), LOWER(c.quote)), 'said', 'inferred') AS epistemic
     FROM c
     LEFT JOIN prev ON prev.new_id = c.id
-    LEFT JOIN CORE.SOURCE_DOCS d ON d.id = c.doc_id
+    LEFT JOIN CORE.DOCUMENTS d ON d.id = c.doc_id
   ) s
   ON t.id = s.id
   WHEN NOT MATCHED THEN INSERT
-    (id, text, kind, area_id, stated_by, source_doc_ids, quote, valid_from, valid_to, learned_at,
+    (id, text, kind, area_id, stated_by, source_doc_ids_json, quote, valid_from, valid_to, learned_at,
      supersedes, superseded_by, epistemic, verification, visibility, confidence, review_status,
      subject, extractor, owner_team)
   VALUES
@@ -97,6 +97,39 @@ CREATE OR REPLACE TASK CORE.T_SUPERSEDE
   AFTER CORE.T_EXTRACT
 AS
   CALL CORE.APPLY_SUPERSESSION();
+
+-- -------------------------------------------------------------------------------------------------
+-- Employee review decisions (My Knowledge page) -> FACTS. The app may only append REVIEW_EVENTS;
+-- this owner's-rights procedure applies the latest decision per fact, so the audit trail stays intact.
+-- -------------------------------------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE CORE.APPLY_REVIEWS()
+  RETURNS STRING
+  LANGUAGE SQL
+  EXECUTE AS OWNER
+AS
+$$
+BEGIN
+  MERGE INTO CORE.FACTS f
+  USING (
+    SELECT fact_id, status, corrected_text FROM CORE.REVIEW_EVENTS
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY fact_id ORDER BY "AT" DESC) = 1
+  ) r
+  ON f.id = r.fact_id
+  WHEN MATCHED AND (f.review_status IS DISTINCT FROM r.status
+                    OR f.corrected_text IS DISTINCT FROM COALESCE(r.corrected_text, f.corrected_text)) THEN UPDATE SET
+    review_status  = r.status,
+    corrected_text = COALESCE(r.corrected_text, f.corrected_text),
+    verification   = IFF(r.status IN ('approved', 'corrected'), 'verified', f.verification);
+  RETURN 'reviews applied: ' || SQLROWCOUNT;
+END;
+$$;
+
+CREATE OR REPLACE TASK CORE.T_APPLY_REVIEWS
+  WAREHOUSE = KEEPLINE_WH
+  SCHEDULE = '5 MINUTE'
+  COMMENT = 'Keepline: apply employee review decisions to facts.'
+AS
+  CALL CORE.APPLY_REVIEWS();
 
 -- -------------------------------------------------------------------------------------------------
 -- Valid time: what was true in the world on a given date (the agent answers "as of" a question date).

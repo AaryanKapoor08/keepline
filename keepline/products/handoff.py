@@ -23,7 +23,8 @@ from keepline.contracts import (
 
 from keepline.products._common import (
     CRITICAL_KINDS,
-    STRONG_EXPERTISE,
+    is_strong,
+    looks_like_fact,
     StoreLike,
     _safe,
     _snippet,
@@ -35,7 +36,6 @@ from keepline.products._common import (
     is_pending,
     people_by_id,
     redact_secrets,
-    short_title,
 )
 from keepline.products.gaps import gap_questions
 
@@ -74,30 +74,35 @@ _PROMISE = re.compile(
     re.I,
 )
 PROMISE_LOOKBACK_DAYS = 30
+HELD_SCORE = 0.5  # areas the person clearly carries even without ticket evidence
 
 
 def successor(experts: list[Expertise], people: dict[str, Person], leaving: str, today: date) -> tuple[str | None, str | None]:
-    """(learner, reviewer) for an area. Prefer pairing a learner (some evidence) with the strongest remaining expert.
+    """(learner, reviewer) for an area: a learner from the leaver's own team, paired with the strongest remaining holder.
 
-    Returns person ids; either may be None. A human approves; this is a suggestion, never an assignment.
+    Pairing spreads the knowledge instead of moving the single point of failure to one new head. Nobody who is
+    also leaving is suggested. Either id may be None. A manager approves; this is a suggestion, never an assignment.
     """
-    remaining = [
-        e for e in sorted(experts, key=lambda e: e.score, reverse=True)
-        if e.person_id != leaving and not has_left(people.get(e.person_id), today)
-        and not (people.get(e.person_id) and people[e.person_id].departure_date)
-    ]
-    if not remaining:
-        return None, None
-    reviewer = remaining[0]
-    learners = [e for e in remaining[1:] if 0.05 <= e.score < STRONG_EXPERTISE + 0.25]
-    if reviewer.score >= STRONG_EXPERTISE and learners:
-        return learners[0].person_id, reviewer.person_id
-    return reviewer.person_id, None
+    def stays(pid: str) -> bool:
+        p = people.get(pid)
+        return pid != leaving and not has_left(p, today) and not (p and p.departure_date)
+
+    ranked = [e for e in sorted(experts, key=lambda e: e.score, reverse=True) if stays(e.person_id)]
+    reviewer = next((e.person_id for e in ranked if is_strong(e)), None)
+    team = people[leaving].team if leaving in people else None
+    same_team = [e.person_id for e in ranked if team and people.get(e.person_id) and people[e.person_id].team == team]
+    newcomers = sorted((p for p in people.values() if team and p.team == team and stays(p.id) and p.id not in same_team),
+                       key=lambda p: p.start_date, reverse=True)
+    pool = [pid for pid in same_team + [p.id for p in newcomers] + [e.person_id for e in ranked] if pid != reviewer]
+    learner = pool[0] if pool else None
+    if learner is None:
+        return reviewer, None
+    return learner, reviewer
 
 
 def _held_areas(store: StoreLike, person_id: str) -> list[Expertise]:
     exps = _safe(lambda: store.expertise(person_id=person_id)) or []
-    return sorted([e for e in exps if e.score >= STRONG_EXPERTISE * 0.6], key=lambda e: e.score, reverse=True)
+    return sorted([e for e in exps if is_strong(e) or e.score >= HELD_SCORE], key=lambda e: e.score, reverse=True)
 
 
 def _gather_facts(store: StoreLike, person_id: str, held: list[Expertise]) -> list[Fact]:
@@ -106,29 +111,45 @@ def _gather_facts(store: StoreLike, person_id: str, held: list[Expertise]) -> li
     for e in held:
         others = [
             x for x in _safe(lambda: store.expertise(area_id=e.area_id)) or []
-            if x.person_id != person_id and x.score >= STRONG_EXPERTISE
+            if x.person_id != person_id and is_strong(x)
         ]
         if others:
             continue
         for f in _safe(lambda: store.facts(area_id=e.area_id, current_only=True)) or []:
             if f.kind in CRITICAL_KINDS:
                 facts.setdefault(f.id, f)
+    facts = {k: f for k, f in facts.items() if looks_like_fact(f.text)}
     return sorted(facts.values(), key=lambda f: (SECTION_ORDER.index(_KIND_SECTION.get(f.kind, "decisions")), f.area_id or "", f.id))
 
 
+MAX_PER_SECTION = 12
+
+
 def _fact_items(store: StoreLike, facts: list[Fact], owners: dict[str, str | None]) -> list[HandoffItem]:
-    items = []
-    for f in facts:
+    """One item per distinct fact, best-evidenced first, capped per section so the pack stays reviewable."""
+    ranked = sorted(facts, key=lambda f: (-f.confidence, -len(f.source_doc_ids), -f.valid_from.toordinal()))
+    items: list[HandoffItem] = []
+    seen: set[str] = set()
+    per_section: dict[str, int] = {}
+    for f in ranked:
         section = _KIND_SECTION.get(f.kind)
         if section is None:
             continue
         if section == "decisions" and is_pending(f.text):
             section = "unresolved_work"
+        norm = " ".join(f.text.lower().split())[:120]
+        if norm in seen or per_section.get(section, 0) >= MAX_PER_SECTION:
+            continue
+        seen.add(norm)
+        per_section[section] = per_section.get(section, 0) + 1
+        text = redact_secrets(" ".join(f.text.split()))
+        title = text if len(text) <= 110 else text[:109].rsplit(" ", 1)[0] + "…"
+        detail = text if title != text else (f"About: {f.subject}" if f.subject and len(f.subject) > 3 else "")
         items.append(
             HandoffItem(
                 section=section,
-                title=redact_secrets(short_title(f)),
-                detail=redact_secrets(f.text),
+                title=title,
+                detail=detail,
                 area_id=f.area_id,
                 fact_ids=[f.id],
                 citations=citations_for(store, f),

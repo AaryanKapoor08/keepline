@@ -110,7 +110,7 @@ class FakeStore:
             Expertise("sarah", "vendor_api", 0.7, 20, 4, 3, _d("2026-08-30")),
             Expertise("mike", "vendor_api", 0.5, 12, 3, 1, _d("2026-08-01")),
             Expertise("priya", "payroll", 0.8, 30, 6, 2, _d("2026-09-01")),
-            Expertise("dana", "payroll", 0.4, 10, 1, 0, _d("2026-08-01")),
+            Expertise("dana", "payroll", 0.4, 10, 2, 0, _d("2026-08-01")),
             Expertise("tom", "compliance", 0.85, 25, 5, 4, _d("2026-08-28")),
         ]
         self._log: list[dict[str, Any]] = [

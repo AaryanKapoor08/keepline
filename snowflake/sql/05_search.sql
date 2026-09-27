@@ -40,12 +40,12 @@ AS (
     d.owner_team,
     d.author_id,
     p.name                                                AS author_name,
-    d.participants,
-    d.timestamp::DATE                                     AS doc_date,
-    TO_VARCHAR(d.timestamp, 'YYYY-MM-DD"T"HH24:MI:SS')    AS ts,
+    d.participants_json                                   AS participants,
+    d.ts::DATE                                            AS doc_date,
+    TO_VARCHAR(d.ts, 'YYYY-MM-DD"T"HH24:MI:SS')           AS ts,
     d.url,
     d.container
-  FROM CORE.SOURCE_DOCS d
+  FROM CORE.DOCUMENTS d
   LEFT JOIN CORE.PEOPLE p ON p.id = d.author_id
   WHERE d.visibility IN ('public', 'team')                -- DMs are never indexed
     AND d.text IS NOT NULL
@@ -74,7 +74,7 @@ AS (
     f.supersedes,
     f.epistemic,
     f.confidence,
-    f.source_doc_ids[0]::STRING                           AS primary_doc_id
+    f.source_doc_ids_json[0]::STRING                      AS primary_doc_id
   FROM CORE.FACTS f
   WHERE f.visibility IN ('public', 'team')
     AND f.review_status <> 'rejected'

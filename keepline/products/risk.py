@@ -17,13 +17,13 @@ from __future__ import annotations
 import calendar
 import logging
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date
 
 from keepline.config import DEMO_TODAY
 from keepline.contracts import Area, AreaRisk, DepartureType, Expertise, Fact, FactKind, Person
 
 from keepline.products._common import (
-    STRONG_EXPERTISE,
+    is_strong,
     StoreLike,
     _safe,
     countdown,
@@ -105,7 +105,7 @@ def _explain(
         d = (p.departure_date - today).days
         when = f" {name(top.person_id)}'s last day is in {d} days." if d >= 0 else ""
     if len(holders) == 1:
-        return f"Only {name(top.person_id)} has touched {area.name} in 6 months: {ev(top)}.{when}"
+        return f"Only {name(top.person_id)} has hands-on evidence for {area.name} in 6 months: {ev(top)}.{when}"
     others = ", ".join(name(e.person_id) for e in holders[1:3])
     return f"{len(holders)} people hold {area.name}: {name(top.person_id)} ({ev(top)}), plus {others}.{when}"
 
@@ -122,15 +122,21 @@ def _area_risk(
     exps = sorted(_safe(lambda: store.expertise(area_id=area.id)) or [], key=lambda e: e.score, reverse=True)
     gone = {pid for pid, p in people.items() if has_left(p, today)} | excluded
     present = [e for e in exps if e.person_id not in gone]
-    strong = [e for e in present if e.score >= STRONG_EXPERTISE and e.enough_data]
-    lost = [e for e in exps if e.person_id in gone and e.score >= STRONG_EXPERTISE]
+    strong = [e for e in present if is_strong(e)]
+    lost = [e for e in exps if e.person_id in gone and is_strong(e)]
     bus = len(strong)
     enough = any(e.enough_data for e in exps) and bool(exps)
 
     if strong:
-        # The holder whose departure hurts most: highest likelihood, ties broken by expertise.
-        at_risk = max(strong, key=lambda e: (departure_likelihood(people.get(e.person_id), today), e.score))
-        dl = departure_likelihood(people.get(at_risk.person_id), today)
+        # The holder whose departure hurts most: likelihood weighted by their share of the area's evidence, so a
+        # leaver who is a minor holder of an area does not make it look as fragile as one they carry alone.
+        top_score = max(e.score for e in strong) or 1.0
+
+        def weighted(e: Expertise) -> float:
+            return departure_likelihood(people.get(e.person_id), today) * (e.score / top_score)
+
+        at_risk = max(strong, key=lambda e: (weighted(e), e.score))
+        dl = weighted(at_risk)
         at_risk_id: str | None = at_risk.person_id
         cd = countdown(people.get(at_risk_id), today)
     elif lost:
@@ -181,7 +187,9 @@ def risk_map(store: StoreLike, today: date, *, exclude_person_ids: tuple[str, ..
     for a in areas:
         r = _area_risk(store, a, _importance(a, signals), by_area.get(a.id, []), people, today, excluded)
         if with_trend:
-            r.trend = risk_history(store, a.id, months=6, today=today, _importance_value=r.importance, _facts=by_area.get(a.id, []))
+            r.trend = risk_history(store, a.id, months=6, today=today, _importance_value=r.importance)
+            if r.trend:
+                r.trend[-1] = r.risk
         out.append(r)
     out.sort(key=lambda r: r.risk, reverse=True)
     return out
@@ -204,39 +212,34 @@ def risk_history(
     *,
     today: date | None = None,
     _importance_value: float | None = None,
-    _facts: list[Fact] | None = None,
 ) -> list[float]:
-    """Monthly risk trend (oldest -> newest), recomputed as the org would have seen it at each month end.
+    """Monthly risk trend (oldest -> newest), as the org could have seen it at each month end.
 
-    Redundancy at month m comes from how many distinct people stated facts about the area in the trailing
-    90 days (knowledge concentrating in one voice raises risk). Departure likelihood only counts a departure date
-    once it is within the notice window of that month end -- before notice, the org could not have known.
+    Holders are today's strong holders (the bus factor); what changes month to month is what the org *knew*: a
+    departure date only counts once it is inside the notice window of that month end (retirements are announced
+    earlier than resignations). The last point is the live score, so the sparkline and the map always agree.
     """
     today = today or DEMO_TODAY
     area = _safe(lambda: store.area(area_id))
     if area is None:
         return []
-    facts = _facts if _facts is not None else (_safe(lambda: store.facts(area_id=area_id)) or [])
     people = people_by_id(store)
     importance = _importance_value if _importance_value is not None else max(1, min(3, area.criticality)) / 3
-    exps = {e.person_id: e.score for e in (_safe(lambda: store.expertise(area_id=area_id)) or [])}
-    trend: list[float] = []
+    strong = [e for e in _safe(lambda: store.expertise(area_id=area_id)) or [] if is_strong(e)]
+    top = max((e.score for e in strong), default=1.0) or 1.0
+    redundancy = redundancy_from_bus_factor(len(strong))
+
+    def known_dl(pid: str, end: date) -> float:
+        p = people.get(pid)
+        window = NOTICE_WINDOW_DAYS.get(p.departure_type, DEFAULT_NOTICE_DAYS) if p and p.departure_type else DEFAULT_NOTICE_DAYS
+        if p and p.departure_date and (p.departure_date - end).days <= window:
+            return departure_likelihood(p, end)
+        return departure_likelihood(None, end)
+
+    trend = []
     for end in _month_ends(today, months):
-        window = [f for f in facts if f.stated_by and end - timedelta(days=90) <= f.valid_from <= end]
-        voices = Counter(f.stated_by for f in window)
-        holders = [pid for pid, n in voices.items() if n >= 2 and not has_left(people.get(pid), end)]
-        if not holders:
-            holders = [pid for pid, s in exps.items() if s >= STRONG_EXPERTISE]
-        bus = max(1, len(holders)) if holders else 0
-
-        def dl(pid: str) -> float:
-            p = people.get(pid)
-            if p and p.departure_date and (p.departure_date - end).days <= NOTICE_WINDOW_DAYS.get(p.departure_type, DEFAULT_NOTICE_DAYS):
-                return departure_likelihood(p, end)
-            return departure_likelihood(None, end)
-
-        d = max((dl(pid) for pid in holders), default=0.5)
-        trend.append(round(importance * (1 - redundancy_from_bus_factor(bus)) * d, 4))
+        d = max((known_dl(e.person_id, end) * e.score / top for e in strong), default=0.5)
+        trend.append(round(importance * (1 - redundancy) * d, 4))
     return trend
 
 

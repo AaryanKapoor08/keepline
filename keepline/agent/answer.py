@@ -33,10 +33,10 @@ from keepline.contracts import (
     Verification,
     Visibility,
 )
-from keepline.memory.extract import AreaLinker
+from keepline.memory.extract import AreaLinker, classify_kind, is_noise, is_question, normalize_ws, segments
 from keepline.memory.store import MemoryStore
 from keepline.retrieval.search import Hit, SearchIndex
-from keepline.retrieval.text import content_set, raw_tokens, stem, tokenize
+from keepline.retrieval.text import content_set, jaccard, split_sentences, stem, tokenize
 
 # ------------------------------------------------------------------------------------------------ question intent
 
@@ -67,6 +67,47 @@ QUESTION_FILLER = frozenset(
     currently still right exactly use used do know need happen happens anyone someone else really actually our we i us
     would should could can is are was were what which when where why how who whom""".split()
 )
+NUMBER_Q = re.compile(
+    r"\b(how (many|much|long|often|late|early|soon)|what time|when|what day|which day|deadline|cutoff|cut-off|"
+    r"limit|number|phone|version|id|how old|what date|window|retention|how fast|threshold|amount)\b", re.I)
+WHO_Q = re.compile(r"\b(who|whom|whose|contact|rep|account manager)\b", re.I)
+WHERE_Q = re.compile(r"\bwhere\b", re.I)
+_NUMBERISH = re.compile(
+    r"\d|\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|sixty|ninety|"
+    r"first|second|third|last|monday|tuesday|wednesday|thursday|friday|saturday|sunday|daily|weekly|monthly|"
+    r"quarterly|annually|yearly|nightly|morning|noon|midnight|evening|week|month|year|day)s?\b", re.I)
+_NAMEISH = re.compile(r"(?<!^)(?<![.!?] )\b[A-Z][a-z]+(?: [A-Z][a-z'-]+)+|@\w+|\S+@\S+\.\w+")
+_PLACEISH = re.compile(r"\b(in|on|at|under|inside)\s+(the\s+)?[A-Z0-9#]|\b(vault|drive|folder|share|wiki|sheet|"
+                       r"server|portal|binder|safe|cabinet|channel|repo|confluence|sharepoint|1password)\b", re.I)
+
+
+_PHONE = re.compile(r"\+?\d[\d ().-]{6,}\d")
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
+
+
+def answer_type(question: str, is_routing: bool) -> str | None:
+    """Expected shape of the answer: 'phone' | 'email' | 'number' | 'person' | 'place' | None."""
+    if re.search(r"\b(phone|call|dial|extension|hotline)\b", question, re.I):
+        return "phone"
+    if re.search(r"\bemail (address)?\b|\be-mail\b", question, re.I):
+        return "email"
+    if NUMBER_Q.search(question):
+        return "number"
+    if WHERE_Q.search(question):
+        return "place"
+    if WHO_Q.search(question) and not is_routing:
+        return "person"
+    return None
+
+
+def type_matches(atype: str | None, text: str) -> float:
+    if atype is None:
+        return 0.0
+    pat = {"number": _NUMBERISH, "person": _NAMEISH, "place": _PLACEISH, "phone": _PHONE, "email": _EMAIL}[atype]
+    return 1.0 if pat.search(text) else 0.0
+
+
+SHAPE_WORDS = frozenset(stem(w) for w in "time date day number long often many much phone call email address".split())
 TODAY_WORDS = re.compile(r"\b(today|now|right now|this (morning|afternoon|evening)|tonight)\b", re.I)
 YESNO_Q = re.compile(r"^\s*(can|could|may|should|is it (ok|okay|safe|fine)|am i allowed|do i need)\b", re.I)
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
@@ -85,6 +126,7 @@ CAL = {
     "fact_conf": 1.2,  # extraction confidence
     "margin": 1.0,  # support gap to the best *competing* fact
     "agreement": 0.3,  # other retrieved facts in the same area/kind agree (non-contradicted)
+    "type_match": 0.8,  # the fact has the shape the question asks for (a number for "what time", a name for "who")
     "missing_key": -1.8,  # the question's most specific word (highest idf) is absent from the fact
     "contradicted": -1.5,  # the fact is marked contradicted by a conflicting statement
 }
@@ -106,11 +148,15 @@ class _Cand:
     kind_match: float
     area_match: float
     missing_key: float = 0.0
+    type_match: float = 0.0
+    rel: float = 0.0  # retrieval score relative to the best hit for this question
+    raw: bool = False  # a sentence straight from a retrieved doc (extraction missed it), not a stored fact
     replaced: list[Fact] = field(default_factory=list)
 
     @property
     def support(self) -> float:
-        return 0.6 * self.coverage + 0.15 * self.kind_match + 0.15 * self.area_match + 0.1 * (1 - self.missing_key)
+        return (0.5 * self.coverage + 0.12 * self.kind_match + 0.1 * self.area_match + 0.08 * (1 - self.missing_key)
+                + 0.12 * self.type_match + 0.08 * self.rel)
 
 
 @dataclass
@@ -160,6 +206,26 @@ class AnswerAgent:
         for f in self.facts.values():
             self.by_area_kind[(f.area_id, str(f.kind))].append(f)
         self.area_lex = {aid: content_set(" ".join([a.name, *a.keywords, *a.systems])) for aid, a in self.areas.items()}
+        self.doc_facts: dict[str, list[Fact]] = defaultdict(list)  # doc -> facts it is a receipt for
+        for f in self.facts.values():
+            for d in f.source_doc_ids:
+                self.doc_facts[d].append(f)
+        self.thread_root: dict[str, str] = {}  # doc -> first doc of its thread (question context for replies)
+        first: dict[str, str] = {}
+        for r in store.conn.execute("SELECT id, thread_id FROM documents WHERE thread_id IS NOT NULL ORDER BY ts, id"):
+            root = first.setdefault(r["thread_id"], r["id"])
+            if root != r["id"]:
+                self.thread_root[r["id"]] = root
+        self.name_to_id: dict[str, str] = {}
+        for p in self.people.values():
+            self.name_to_id.setdefault(p.name.lower(), p.id)
+            self.name_to_id.setdefault(p.name.split()[0].lower(), p.id)
+        self._sentences: dict[tuple[str, bool], list[tuple[int, str, str, datetime]]] = {}
+        self._ctx_cache: dict[str, frozenset[str]] = {}
+        self.doc_titles = {r["id"]: r["title"] for r in store.conn.execute("SELECT id, title FROM documents")}
+        self.thread_children: dict[str, list[str]] = defaultdict(list)
+        for d, root in self.thread_root.items():
+            self.thread_children[root].append(d)
         self._cache: OrderedDict[tuple[Any, ...], _Analysis] = OrderedDict()
 
     # ------------------------------------------------------------------ public API
@@ -197,8 +263,9 @@ class AnswerAgent:
         hits = self.index.search(question, k=max(3 * params.k, 24), as_of=as_of, visible_to=asker_id,
                                  source_weights=params.source_weights)
         area_id = self.classify_area(question) or self._vote_area(hits)
-        q_terms = self._query_terms(question)
-        cands = self._candidates(hits, q_terms, intents, area_id, as_of, asker_id, params)
+        atype = answer_type(question, is_routing)
+        q_terms = self._query_terms(question, atype)
+        cands = self._candidates(hits, q_terms, intents, area_id, as_of, asker_id, params, atype)
         doc_hits = [h for h in hits if h.fact_id is None][: params.k]
         experts = self._experts(area_id, asker_id, as_of)
         feats = self._features(cands, doc_hits, area_id, is_routing, experts, q_terms)
@@ -210,9 +277,11 @@ class AnswerAgent:
             self._cache.popitem(last=False)
         return an
 
-    def _query_terms(self, question: str) -> dict[str, float]:
-        """Content terms of the question with idf weights (filler like 'anything'/'today' removed)."""
-        terms = {t for t in tokenize(question) if t not in QUESTION_FILLER}
+    def _query_terms(self, question: str, atype: str | None = None) -> dict[str, float]:
+        """Content terms of the question with idf weights (filler like 'anything'/'today' removed; for
+        "what time / how long / which number" questions the shape words are handled by the answer-type check)."""
+        drop = QUESTION_FILLER | (SHAPE_WORDS if atype in ("number", "phone", "email") else frozenset())
+        terms = {t for t in tokenize(question) if t not in drop}
         return {t: self.index.idf.get(t, max(self.index.idf.values(), default=1.0)) for t in terms}
 
     def _vote_area(self, hits: Sequence[Hit]) -> str | None:
@@ -249,6 +318,16 @@ class AnswerAgent:
         extra = " ".join(filter(None, [f.subject, self.areas[f.area_id].name if f.area_id in self.areas else None]))
         return content_set(f"{f.text} {extra}")
 
+    def _context_terms(self, doc_id: str) -> frozenset[str]:
+        """Words of the thread's opening question and the doc title: the context a terse reply answers."""
+        if doc_id not in self._ctx_cache:
+            parts = [self.doc_titles.get(doc_id) or ""]
+            root = self.thread_root.get(doc_id)
+            if root:
+                parts.append(" ".join(s for _, s, _, _ in self._doc_sentences(root, keep_questions=True)[:2]))
+            self._ctx_cache[doc_id] = content_set(" ".join(parts))
+        return self._ctx_cache[doc_id]
+
     def _coverage(self, q_terms: dict[str, float], f: Fact) -> tuple[float, float]:
         """(idf-weighted coverage of the question by the fact, 1.0 if the most specific question word is missing).
 
@@ -259,6 +338,8 @@ class AnswerAgent:
             return 0.0, 0.0
         ft = self._fact_terms(f)
         area_terms = self.area_lex.get(f.area_id or "", frozenset())
+        if f.source_doc_ids:
+            area_terms = area_terms | self._context_terms(f.source_doc_ids[0])
         got = sum(w * (1.0 if t in ft else 0.5 if t in area_terms else 0.0) for t, w in q_terms.items())
         key = max(sorted(q_terms), key=lambda t: q_terms[t])
         missing = 0.0 if (key in ft or key in area_terms) else 1.0
@@ -266,7 +347,7 @@ class AnswerAgent:
 
     def _candidates(
         self, hits: Sequence[Hit], q_terms: dict[str, float], intents: list[FactKind], area_id: str | None,
-        as_of: date, asker_id: str, params: PolicyParams,
+        as_of: date, asker_id: str, params: PolicyParams, atype: str | None = None,
     ) -> list[_Cand]:
         raw: dict[str, float] = {}
         for h in hits:
@@ -295,13 +376,89 @@ class AnswerAgent:
                     missing_key=missing,
                     kind_match=1.0 if f.kind in intents[:3] else 0.0,
                     area_match=1.0 if area_id and f.area_id == area_id else 0.0,
+                    type_match=type_matches(atype, f.text),
                     replaced=replaced,
                 )
                 out[f.id] = c
             else:
                 c.retrieval = max(c.retrieval, score)
                 c.replaced = c.replaced or replaced
-        return sorted(out.values(), key=lambda c: (-(c.support + 0.02 * math.log1p(c.retrieval)), c.fact.id))
+        for c in self._raw_candidates(hits, q_terms, intents, area_id, as_of, params, atype, set(out)):
+            out[c.fact.id] = c
+        top = max((c.retrieval for c in out.values()), default=0.0)
+        for c in out.values():
+            c.rel = c.retrieval / top if top > 0 else 0.0
+        return sorted(out.values(), key=lambda c: (-c.support, -c.fact.valid_from.toordinal(), c.fact.id))
+
+    def _doc_sentences(self, doc_id: str, keep_questions: bool = False) -> list[tuple[int, str, str, datetime]]:
+        """(idx, sentence, speaker, time) for a doc -- ticket comments keep their own author and date."""
+        key = (doc_id, keep_questions)
+        if key not in self._sentences:
+            doc = self.store.doc(doc_id)
+            out: list[tuple[int, str, str, datetime]] = []
+            if doc is not None:
+                segs, _owners = segments(doc, self.name_to_id)
+                i = 0
+                for seg in segs:
+                    for sent in split_sentences(seg.text):
+                        i += 1
+                        sent = normalize_ws(sent)
+                        if keep_questions or (not is_question(sent) and not is_noise(sent)):
+                            out.append((i, sent, seg.author_id, seg.ts))
+            self._sentences[key] = out
+        return self._sentences[key]
+
+    def _raw_candidates(
+        self, hits: Sequence[Hit], q_terms: dict[str, float], intents: list[FactKind], area_id: str | None,
+        as_of: date, params: PolicyParams, atype: str | None, have: set[str],
+    ) -> list[_Cand]:
+        """Recall safety net: the best sentence of each top retrieved doc, when extraction produced no fact for it.
+
+        If the sentence is (a restatement of) a stored fact, that fact -- resolved to its current version -- is used
+        instead, so a stale message can never sneak back in as "current" through this path.
+        """
+        out: list[_Cand] = []
+        seen_docs: set[str] = set()
+        doc_hits = [h for h in hits if h.fact_id is None]
+        for h in doc_hits[: params.k]:
+            if h.doc_id in seen_docs:
+                continue
+            seen_docs.add(h.doc_id)
+            best: tuple[float, float, int, str, str, datetime] | None = None
+            best_doc = h.doc_id
+            # a retrieved question's answer lives in the replies below it
+            for doc_id in [h.doc_id, *self.thread_children.get(h.doc_id, [])[:6]]:
+                meta = self.doc_meta.get(doc_id)
+                if meta is None or meta[1].date() > as_of:
+                    continue
+                for i, sent, who, ts in self._doc_sentences(doc_id):
+                    if ts.date() > as_of:
+                        continue
+                    probe = Fact(id="", text=sent, kind=FactKind.FACT, area_id=h.area_id, stated_by=who,
+                                 source_doc_ids=[doc_id], quote=sent, valid_from=ts.date())
+                    cov, _m = self._coverage(q_terms, probe)
+                    key = (cov + 0.15 * type_matches(atype, sent), cov)
+                    if best is None or key > best[:2]:
+                        best, best_doc = (key[0], cov, i, sent, who, ts), doc_id
+            if best is None or best[1] < 0.25:
+                continue
+            _, cov, i, sent, who, ts = best
+            sset = content_set(sent)
+            stored = [f for f in self.doc_facts.get(best_doc, []) if jaccard(content_set(f.quote), sset) >= 0.5]
+            if stored:
+                continue  # already represented by a stored (and currency-resolved) fact
+            kind, conf = classify_kind(sent)
+            fact = Fact(id=f"raw:{best_doc}:{i}", text=sent, kind=kind or FactKind.FACT, area_id=h.area_id,
+                        stated_by=who, source_doc_ids=[best_doc], quote=sent, valid_from=ts.date(), learned_at=ts,
+                        confidence=round(0.25 + 0.2 * conf, 3), subject=None, extractor="raw")
+            if fact.id in have:
+                continue
+            cov, missing = self._coverage(q_terms, fact)
+            out.append(_Cand(fact=fact, retrieval=h.score, coverage=cov, missing_key=missing,
+                             kind_match=1.0 if fact.kind in intents[:3] else 0.0,
+                             area_match=1.0 if area_id and fact.area_id == area_id else 0.0,
+                             type_match=type_matches(atype, sent), raw=True))
+        return out
 
     def _independent_receipts(self, f: Fact) -> int:
         authors = {self.doc_meta[d][2] for d in f.source_doc_ids if d in self.doc_meta}
@@ -327,6 +484,8 @@ class AnswerAgent:
             "margin": max(0.0, top.support - (rival.support if rival else 0.0)) if top else 0.0,
             "agreement": min(1.0, agree / 2),
             "missing_key": top.missing_key if top else 1.0,
+            "type_match": top.type_match if top else 0.0,
+            "top_is_raw": 1.0 if top and top.raw else 0.0,
             "contradicted": 1.0 if top and top.fact.verification == Verification.CONTRADICTED else 0.0,
             "top_support": top.support if top else 0.0,
             "top_retrieval": math.log1p(top.retrieval) if top else 0.0,
@@ -476,8 +635,10 @@ class AnswerAgent:
     def _cite(self, f: Fact, is_current: bool = True) -> Citation:
         doc_id = f.source_doc_ids[0] if f.source_doc_ids else ""
         url, ts, author = self.doc_meta.get(doc_id, ("", datetime.combine(f.valid_from, datetime.min.time()), f.stated_by or ""))
-        return Citation(doc_id=doc_id, quote=f.quote, author_id=f.stated_by or author, timestamp=ts, url=url,
-                        fact_id=f.id, is_current=is_current)
+        stored = f.id in self.facts
+        return Citation(doc_id=doc_id, quote=f.quote, author_id=f.stated_by or author,
+                        timestamp=(f.learned_at or ts) if not stored else ts, url=url,
+                        fact_id=f.id if stored else None, is_current=is_current)
 
     def _compose_answer(self, an: _Analysis, base: dict[str, Any]) -> Answer:
         group = self._answer_group(an)
@@ -506,7 +667,7 @@ class AnswerAgent:
                 inferred.append(f"Inferred: {self.people[pid].name} {st}; confirm with the current owner if critical.")
                 break
         return Answer(action=Action.ANSWER, text=text, said=said, inferred=inferred,
-                      confidence=round(an.confidence, 4), fact_ids=[c.fact.id for c in group], **base)
+                      confidence=round(an.confidence, 4), fact_ids=[c.fact.id for c in group if c.fact.id in self.facts], **base)
 
     def _today_reasoning(self, an: _Analysis, group: list[_Cand], inferred: list[str]) -> str:
         """'Can I rotate the key today?' + a weekday rule -> reason explicitly about as_of's weekday."""

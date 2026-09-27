@@ -20,6 +20,7 @@ from keepline.products._common import (
     doc_citation,
     first_name,
     has_left,
+    looks_like_fact,
     people_by_id,
     short_title,
 )
@@ -75,7 +76,7 @@ def _recent_decisions(store: StoreLike, areas: list[Area], today: date) -> Brief
     cutoff = today - timedelta(days=RECENT_DECISION_DAYS)
     facts = [
         f for f in _safe(lambda: store.facts(kinds=[FactKind.DECISION], current_only=True)) or []
-        if f.area_id in ids and f.valid_from >= cutoff and f.valid_from <= today
+        if f.area_id in ids and cutoff <= f.valid_from <= today and looks_like_fact(f.text)
     ]
     facts.sort(key=lambda f: f.valid_from, reverse=True)
     rows = []
@@ -97,7 +98,7 @@ def _risks_and_landmines(store: StoreLike, areas: list[Area], risks: list[AreaRi
             rows.append({"type": "risk", "area_id": r.area_id, "title": f"{r.area_name}: bus factor {r.bus_factor}",
                          "detail": r.explanation, "level": risk_level(r.risk), "citations": []})
     for f in _safe(lambda: store.facts(kinds=[FactKind.LANDMINE], current_only=True)) or []:
-        if f.area_id in ids:
+        if f.area_id in ids and looks_like_fact(f.text):
             rows.append({"type": "landmine", "area_id": f.area_id, "title": short_title(f), "detail": f.text,
                          "fact_id": f.id, "citations": citations_for(store, f, limit=2)})
     return BriefSection("Open risks & landmines", rows)
@@ -108,7 +109,7 @@ def _glossary(store: StoreLike, areas: list[Area]) -> BriefSection:
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
     for a in areas:
-        facts = _safe(lambda: store.facts(area_id=a.id, current_only=True)) or []
+        facts = [f for f in _safe(lambda: store.facts(area_id=a.id, current_only=True)) or [] if looks_like_fact(f.text)]
         for term in [*a.systems, *[k for k in a.keywords if k[:1].isupper() or len(k) <= 5]][:6]:
             if term.lower() in seen:
                 continue

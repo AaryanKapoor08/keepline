@@ -1,7 +1,7 @@
 -- =================================================================================================
 -- Keepline on Snowflake · 03_extract.sql
--- RAW exports -> CORE.SOURCE_DOCS (normalize + area linking + ACL) -> Cortex extraction -> FACT_CANDIDATES.
--- Incremental: a stream on SOURCE_DOCS feeds a task graph, so new messages become facts within minutes,
+-- RAW exports -> CORE.DOCUMENTS (normalize + area linking + ACL) -> Cortex extraction -> FACT_CANDIDATES.
+-- Incremental: a stream on DOCUMENTS feeds a task graph, so new messages become facts within minutes,
 -- and the LLM only ever sees each message once.
 --
 --   T_NORMALIZE   (every 15 min)   CALL CORE.NORMALIZE_RAW()
@@ -27,7 +27,7 @@ USE SCHEMA CORE;
 
 -- -------------------------------------------------------------------------------------------------
 -- Normalization: RAW VARIANT -> typed CORE tables. Deterministic, idempotent (MERGE on id).
--- Area linking is keyword-based (customer-provided lexicon in AREAS.keywords): cheap, explainable,
+-- Area linking is keyword-based (customer-provided lexicon in AREAS.keywords_json): cheap, explainable,
 -- and identical to the local engine; Cortex adds facts on top of it, it does not replace it.
 -- -------------------------------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE CORE.NORMALIZE_RAW()
@@ -56,34 +56,36 @@ BEGIN
   MERGE INTO CORE.AREAS t
   USING (
     SELECT record:id::STRING AS id, record:name::STRING AS name, record:description::STRING AS description,
-           record:keywords::ARRAY AS keywords, COALESCE(record:systems::ARRAY, ARRAY_CONSTRUCT()) AS systems,
+           record:keywords::ARRAY AS keywords_json, COALESCE(record:systems::ARRAY, ARRAY_CONSTRUCT()) AS systems_json,
            COALESCE(record:criticality::NUMBER, 2) AS criticality
     FROM RAW.ORG_AREAS
     QUALIFY ROW_NUMBER() OVER (PARTITION BY record:id ORDER BY loaded_at DESC) = 1
   ) s ON t.id = s.id
-  WHEN MATCHED THEN UPDATE SET name = s.name, description = s.description, keywords = s.keywords,
-       systems = s.systems, criticality = s.criticality
-  WHEN NOT MATCHED THEN INSERT (id, name, description, keywords, systems, criticality)
-       VALUES (s.id, s.name, s.description, s.keywords, s.systems, s.criticality);
+  WHEN MATCHED THEN UPDATE SET name = s.name, description = s.description, keywords_json = s.keywords_json,
+       systems_json = s.systems_json, criticality = s.criticality
+  WHEN NOT MATCHED THEN INSERT (id, name, description, keywords_json, systems_json, criticality)
+       VALUES (s.id, s.name, s.description, s.keywords_json, s.systems_json, s.criticality);
 
   -- Source docs + keyword area linking (best area = most keyword hits; ties -> higher criticality).
-  MERGE INTO CORE.SOURCE_DOCS t
+  MERGE INTO CORE.DOCUMENTS t
   USING (
     WITH m AS (
       SELECT record:id::STRING AS id, record:source_type::STRING AS source_type,
              record:author_id::STRING AS author_id, TRY_TO_TIMESTAMP_NTZ(record:timestamp::STRING) AS ts,
              record:text::STRING AS text, record:container::STRING AS container,
              record:thread_id::STRING AS thread_id, record:title::STRING AS title,
-             COALESCE(record:participants::ARRAY, ARRAY_CONSTRUCT()) AS participants,
+             COALESCE(record:participants::ARRAY, ARRAY_CONSTRUCT()) AS participants_json,
              COALESCE(record:visibility::STRING, 'public') AS visibility,
-             record:url::STRING AS url, record:meta AS meta
+             record:url::STRING AS url, record:meta AS meta_json,
+             record:meta:status::STRING AS ticket_status, record:meta:assignee::STRING AS ticket_assignee,
+             record:meta:closed_at::STRING AS ticket_closed_at
       FROM RAW.MESSAGES
       QUALIFY ROW_NUMBER() OVER (PARTITION BY record:id ORDER BY loaded_at DESC) = 1
     ),
     hits AS (
       SELECT m.id, a.id AS area_id, a.criticality,
              COUNT_IF(CONTAINS(LOWER(COALESCE(m.title, '') || ' ' || m.text), LOWER(k.value::STRING))) AS n_hits
-      FROM m, CORE.AREAS a, LATERAL FLATTEN(input => a.keywords) k
+      FROM m, CORE.AREAS a, LATERAL FLATTEN(input => a.keywords_json) k
       GROUP BY m.id, a.id, a.criticality
       HAVING n_hits > 0
       QUALIFY ROW_NUMBER() OVER (PARTITION BY m.id ORDER BY n_hits DESC, a.criticality DESC, a.id) = 1
@@ -91,18 +93,22 @@ BEGIN
     SELECT m.*, h.area_id, p.team AS owner_team
     FROM m LEFT JOIN hits h ON h.id = m.id LEFT JOIN CORE.PEOPLE p ON p.id = m.author_id
   ) s ON t.id = s.id
-  WHEN MATCHED THEN UPDATE SET text = s.text, title = s.title, meta = s.meta, area_id = s.area_id,
-       participants = s.participants, visibility = s.visibility, owner_team = s.owner_team
-  WHEN NOT MATCHED THEN INSERT (id, source_type, author_id, timestamp, text, container, thread_id, title,
-       participants, visibility, url, meta, area_id, owner_team)
+  WHEN MATCHED THEN UPDATE SET text = s.text, title = s.title, meta_json = s.meta_json,
+       ticket_status = s.ticket_status, ticket_assignee = s.ticket_assignee, ticket_closed_at = s.ticket_closed_at,
+       area_id = COALESCE(t.area_id, s.area_id),   -- keep a better (DOC_AREAS) link if one was loaded
+       participants_json = s.participants_json, visibility = s.visibility, owner_team = s.owner_team
+  WHEN NOT MATCHED THEN INSERT (id, source_type, author_id, ts, text, container, thread_id, title,
+       participants_json, visibility, url, meta_json, ticket_status, ticket_assignee, ticket_closed_at,
+       area_id, owner_team)
        VALUES (s.id, s.source_type, s.author_id, s.ts, s.text, s.container, s.thread_id, s.title,
-       s.participants, s.visibility, s.url, s.meta, s.area_id, s.owner_team);
+       s.participants_json, s.visibility, s.url, s.meta_json, s.ticket_status, s.ticket_assignee,
+       s.ticket_closed_at, s.area_id, s.owner_team);
 
   -- Participants of non-public sources become ACL rows (the row access policy's mapping table).
   MERGE INTO CORE.ACL t
   USING (
     SELECT DISTINCT d.id AS object_id, p.value::STRING AS person_id
-    FROM CORE.SOURCE_DOCS d, LATERAL FLATTEN(input => d.participants) p
+    FROM CORE.DOCUMENTS d, LATERAL FLATTEN(input => d.participants_json) p
     WHERE d.visibility IN ('team', 'private')
   ) s ON t.object_id = s.object_id AND t.person_id = s.person_id
   WHEN NOT MATCHED THEN INSERT (object_id, person_id) VALUES (s.object_id, s.person_id);
@@ -115,8 +121,8 @@ $$;
 -- -------------------------------------------------------------------------------------------------
 -- Stream: only new receipts are ever sent to the model.
 -- -------------------------------------------------------------------------------------------------
-CREATE STREAM IF NOT EXISTS CORE.SOURCE_DOCS_NEW
-  ON TABLE CORE.SOURCE_DOCS
+CREATE STREAM IF NOT EXISTS CORE.DOCUMENTS_NEW
+  ON TABLE CORE.DOCUMENTS
   APPEND_ONLY = TRUE
   COMMENT = 'New source docs awaiting Cortex extraction.';
 
@@ -129,27 +135,39 @@ CREATE STREAM IF NOT EXISTS CORE.SOURCE_DOCS_NEW
 --  Quotes are verified against the source text (CONTAINS) before a candidate is accepted; unquotable
 --  claims are downgraded to epistemic = 'inferred' in 04_temporal.sql ("receipts, not vibes").
 -- -------------------------------------------------------------------------------------------------
--- Working set for one extraction run. Filled from the stream by a DML INSERT (which is what advances
--- the stream offset), so a failed model call never silently drops messages: re-run reads the batch again.
-CREATE TABLE IF NOT EXISTS CORE.EXTRACT_BATCH (
-  id STRING, source_type STRING, author_id STRING, timestamp TIMESTAMP_NTZ, text STRING, title STRING,
-  area_id STRING, visibility STRING, owner_team STRING
+-- Extraction queue. The stream is drained into it by a DML INSERT (which is what advances the stream
+-- offset); each run then processes at most MAX_DOCS queued docs, newest first. Cost is bounded per run,
+-- and nothing is dropped: unprocessed docs wait for the next run.
+CREATE TABLE IF NOT EXISTS CORE.EXTRACT_QUEUE (
+  id STRING, source_type STRING, author_id STRING, ts TIMESTAMP_NTZ, text STRING, title STRING,
+  area_id STRING, visibility STRING, owner_team STRING,
+  batch_id STRING, processed BOOLEAN DEFAULT FALSE, queued_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
 );
 
-CREATE OR REPLACE PROCEDURE CORE.EXTRACT_NEW_DOCS(model STRING)
+CREATE OR REPLACE PROCEDURE CORE.EXTRACT_NEW_DOCS(MODEL STRING, MAX_DOCS NUMBER)
   RETURNS STRING
   LANGUAGE SQL
   EXECUTE AS OWNER
+  COMMENT = 'Cortex extraction over at most MAX_DOCS queued docs (NULL = no bound; use deliberately).'
 AS
 $$
+DECLARE
+  run_id STRING DEFAULT UUID_STRING();
+  n_docs NUMBER DEFAULT 0;
 BEGIN
-  TRUNCATE TABLE CORE.EXTRACT_BATCH;
-  INSERT INTO CORE.EXTRACT_BATCH
-    SELECT s.id, s.source_type, s.author_id, s.timestamp, s.text, s.title, s.area_id, s.visibility, s.owner_team
-    FROM CORE.SOURCE_DOCS_NEW s
+  INSERT INTO CORE.EXTRACT_QUEUE (id, source_type, author_id, ts, text, title, area_id, visibility, owner_team)
+    SELECT s.id, s.source_type, s.author_id, s.ts, s.text, s.title, s.area_id, s.visibility, s.owner_team
+    FROM CORE.DOCUMENTS_NEW s
     WHERE s.text IS NOT NULL
       AND (s.visibility <> 'private'
            OR EXISTS (SELECT 1 FROM CORE.ACL a WHERE a.object_id = s.id AND a.person_id = '__pipeline__'));
+
+  UPDATE CORE.EXTRACT_QUEUE SET batch_id = :run_id
+   WHERE id IN (SELECT id FROM CORE.EXTRACT_QUEUE
+                WHERE NOT processed AND batch_id IS NULL
+                ORDER BY ts DESC
+                LIMIT :MAX_DOCS);
+  n_docs := SQLROWCOUNT;
 
   INSERT INTO CORE.DOC_ENTITIES (doc_id, entities, scores)
     SELECT b.id, r:response, r:scoring:scores
@@ -165,7 +183,7 @@ BEGIN
                  'deadline':         'What date or recurring schedule is mentioned, if any?'
                },
                scores => TRUE) AS r
-      FROM CORE.EXTRACT_BATCH b
+      FROM CORE.EXTRACT_QUEUE b WHERE b.batch_id = :run_id
     ) b;
 
   INSERT INTO CORE.FACT_CANDIDATES
@@ -177,7 +195,7 @@ BEGIN
          f.value:subject::STRING,
          b.author_id,
          f.value:quote::STRING,
-         COALESCE(TRY_TO_DATE(f.value:valid_from::STRING), b.timestamp::DATE),
+         COALESCE(TRY_TO_DATE(f.value:valid_from::STRING), b.ts::DATE),
          LEAST(GREATEST(COALESCE(f.value:confidence::FLOAT, 0.5), 0), 1)
            -- a quote that is not literally in the source can never be high-confidence
            * IFF(CONTAINS(LOWER(b.text), LOWER(COALESCE(f.value:quote::STRING, '~no-quote~'))), 1.0, 0.5),
@@ -194,7 +212,7 @@ BEGIN
                     || '(things that break if done wrong), procedures, decisions (with the reason if given), ownership. '
                     || 'Every fact MUST include a verbatim quote copied from the message. If nothing durable is stated, '
                     || 'return an empty list. Do not guess.\n\n'
-                    || 'Message (' || b.source_type || ', ' || TO_VARCHAR(b.timestamp, 'YYYY-MM-DD') || ', title: '
+                    || 'Message (' || b.source_type || ', ' || TO_VARCHAR(b.ts, 'YYYY-MM-DD') || ', title: '
                     || COALESCE(b.title, '-') || '):\n' || b.text,
              model_parameters => {'temperature': 0, 'max_tokens': 2048},
              response_format => {
@@ -225,12 +243,13 @@ BEGIN
                }
              }
            ) AS out
-    FROM CORE.EXTRACT_BATCH b
+    FROM CORE.EXTRACT_QUEUE b WHERE b.batch_id = :run_id
   ) b,
   LATERAL FLATTEN(input => b.out:facts) f
   WHERE f.value:text IS NOT NULL;
 
-  RETURN 'extracted';
+  UPDATE CORE.EXTRACT_QUEUE SET processed = TRUE WHERE batch_id = :run_id;
+  RETURN 'extracted facts from ' || n_docs || ' docs (batch ' || run_id || ')';
 END;
 $$;
 
@@ -248,10 +267,10 @@ CREATE OR REPLACE TASK CORE.T_EXTRACT
   WAREHOUSE = KEEPLINE_WH
   COMMENT = 'Keepline: Cortex extraction over new source docs only.'
   AFTER CORE.T_NORMALIZE
-  WHEN SYSTEM$STREAM_HAS_DATA('CORE.SOURCE_DOCS_NEW')
+  WHEN SYSTEM$STREAM_HAS_DATA('CORE.DOCUMENTS_NEW')
 AS
-  CALL CORE.EXTRACT_NEW_DOCS('claude-sonnet-4-5');
+  CALL CORE.EXTRACT_NEW_DOCS('claude-sonnet-4-5', 200);   -- cost bound per run
 
 -- Ad-hoc: run extraction once without the task graph (used by deploy.py --extract).
 -- CALL CORE.NORMALIZE_RAW();
--- CALL CORE.EXTRACT_NEW_DOCS('claude-sonnet-4-5');
+-- CALL CORE.EXTRACT_NEW_DOCS('claude-sonnet-4-5', 200);

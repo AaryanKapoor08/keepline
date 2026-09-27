@@ -2,14 +2,14 @@
 -- Keepline on Snowflake · 02_policies.sql
 -- Governance that makes the product trustworthy: answers never exceed what the asker could already see.
 --
---   1. Row access policy  CORE.RAP_VISIBILITY  on SOURCE_DOCS and FACTS
+--   1. Row access policy  CORE.RAP_VISIBILITY  on DOCUMENTS and FACTS
 --        public  -> everyone with the app role
 --        team    -> members of the owning team (role) or listed participants
 --        private -> listed participants only (DMs / 1:1 email); the pipeline sees a private source only
 --                   after every participant opted in (CORE.SOURCE_CONTROLS -> ACL '__pipeline__')
 --   2. Masking policy     CORE.MASK_PRIVATE_TEXT  hides private message text from anyone who is not a
 --        participant, even roles that can see the row (e.g. KEEPLINE_ADMIN for ops, KEEPLINE_AUDITOR).
---   3. Aggregation policy CORE.AGG_MIN_GROUP_5 on EXPERTISE and QUERY_LOG: ad-hoc analysis must aggregate
+--   3. Aggregation policy CORE.AGG_MIN_GROUP_5 on EXPERTISE, QUERY_LOG, QUERY_ABOUT: ad-hoc analysis must aggregate
 --        over >= 5 rows, so nobody can build per-person behaviour scores. Risk scoring runs inside
 --        owner's-rights procedures (06_procs.sql) that only ever emit topic-level results.
 --
@@ -36,12 +36,13 @@ AS $$
 $$;
 
 -- Policies must be detached before they can be replaced; this makes the file re-runnable.
-ALTER TABLE IF EXISTS CORE.SOURCE_DOCS DROP ALL ROW ACCESS POLICIES;
+ALTER TABLE IF EXISTS CORE.DOCUMENTS DROP ALL ROW ACCESS POLICIES;
 ALTER TABLE IF EXISTS CORE.FACTS       DROP ALL ROW ACCESS POLICIES;
-ALTER TABLE IF EXISTS CORE.SOURCE_DOCS MODIFY COLUMN text UNSET MASKING POLICY;
+ALTER TABLE IF EXISTS CORE.DOCUMENTS MODIFY COLUMN text UNSET MASKING POLICY;
 ALTER TABLE IF EXISTS CORE.FACTS       MODIFY COLUMN quote UNSET MASKING POLICY;
 ALTER TABLE IF EXISTS CORE.EXPERTISE   UNSET AGGREGATION POLICY;
 ALTER TABLE IF EXISTS CORE.QUERY_LOG   UNSET AGGREGATION POLICY;
+ALTER TABLE IF EXISTS CORE.QUERY_ABOUT UNSET AGGREGATION POLICY;
 
 -- -------------------------------------------------------------------------------------------------
 -- 1. Row access: visibility-aware, participant-aware, team-aware.
@@ -67,7 +68,7 @@ CREATE OR REPLACE ROW ACCESS POLICY CORE.RAP_VISIBILITY
             SELECT 1 FROM CORE.ACL a WHERE a.object_id = p_object_id AND a.person_id = '__pipeline__')))
   COMMENT = 'Keepline: answers never exceed what the asker can already see.';
 
-ALTER TABLE CORE.SOURCE_DOCS ADD ROW ACCESS POLICY CORE.RAP_VISIBILITY ON (id, visibility, owner_team);
+ALTER TABLE CORE.DOCUMENTS ADD ROW ACCESS POLICY CORE.RAP_VISIBILITY ON (id, visibility, owner_team);
 ALTER TABLE CORE.FACTS       ADD ROW ACCESS POLICY CORE.RAP_VISIBILITY ON (id, visibility, owner_team);
 
 -- -------------------------------------------------------------------------------------------------
@@ -86,7 +87,7 @@ CREATE OR REPLACE MASKING POLICY CORE.MASK_PRIVATE_TEXT
     END
   COMMENT = 'Keepline: DMs masked for everyone but their participants (and the pipeline, if opted in).';
 
-ALTER TABLE CORE.SOURCE_DOCS MODIFY COLUMN text  SET MASKING POLICY CORE.MASK_PRIVATE_TEXT USING (text, visibility, id);
+ALTER TABLE CORE.DOCUMENTS MODIFY COLUMN text  SET MASKING POLICY CORE.MASK_PRIVATE_TEXT USING (text, visibility, id);
 ALTER TABLE CORE.FACTS       MODIFY COLUMN quote SET MASKING POLICY CORE.MASK_PRIVATE_TEXT USING (quote, visibility, id);
 
 -- -------------------------------------------------------------------------------------------------
@@ -104,6 +105,7 @@ CREATE OR REPLACE AGGREGATION POLICY CORE.AGG_MIN_GROUP_5
 
 ALTER TABLE CORE.EXPERTISE SET AGGREGATION POLICY CORE.AGG_MIN_GROUP_5;
 ALTER TABLE CORE.QUERY_LOG SET AGGREGATION POLICY CORE.AGG_MIN_GROUP_5;
+ALTER TABLE CORE.QUERY_ABOUT SET AGGREGATION POLICY CORE.AGG_MIN_GROUP_5;
 
 -- -------------------------------------------------------------------------------------------------
 -- Opt-in plumbing: when every participant of a private source has include_private = TRUE for that
@@ -119,7 +121,7 @@ BEGIN
   DELETE FROM CORE.ACL WHERE person_id = '__pipeline__';
   INSERT INTO CORE.ACL (object_id, person_id)
     SELECT d.id, '__pipeline__'
-    FROM CORE.SOURCE_DOCS d, LATERAL FLATTEN(input => d.participants) p
+    FROM CORE.DOCUMENTS d, LATERAL FLATTEN(input => d.participants_json) p
     LEFT JOIN CORE.SOURCE_CONTROLS sc
       ON sc.person_id = p.value::STRING AND sc.source_type = d.source_type
     WHERE d.visibility = 'private'
@@ -131,22 +133,22 @@ $$;
 
 -- -------------------------------------------------------------------------------------------------
 -- Employee-facing, owner's-rights accessor: "who asked about my knowledge?" returns only rows whose
--- answers relied on facts the *caller* stated. This is the only per-person view of the query log,
+-- answers relied on the *caller's* facts or expertise (CORE.QUERY_ABOUT). This is the only per-person view of the query log,
 -- and it is about the caller themself.
 -- -------------------------------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE APP.MY_KNOWLEDGE_QUERY_LOG(max_rows NUMBER)
-  RETURNS TABLE (ts TIMESTAMP_LTZ, asker_id STRING, question STRING, action STRING, area_id STRING)
+  RETURNS TABLE (asked_at TIMESTAMP_NTZ, asker_id STRING, question STRING, action STRING, area_id STRING)
   LANGUAGE SQL
   EXECUTE AS OWNER
 AS
 $$
 DECLARE
   res RESULTSET DEFAULT (
-    SELECT DISTINCT q.ts, q.asker_id, q.question, q.action, q.area_id
-    FROM CORE.QUERY_LOG q, LATERAL FLATTEN(input => q.fact_ids) f
-    JOIN CORE.FACTS fa ON fa.id = f.value::STRING
-    WHERE fa.stated_by = CORE.CURRENT_PERSON_ID()
-    ORDER BY q.ts DESC
+    SELECT q.asked_at, q.asker_id, q.question, q.action, q.area_id
+    FROM CORE.QUERY_LOG q
+    JOIN CORE.QUERY_ABOUT qa ON qa.query_id = q.id
+    WHERE qa.person_id = CORE.CURRENT_PERSON_ID()
+    ORDER BY q.asked_at DESC
     LIMIT :max_rows);
 BEGIN
   RETURN TABLE(res);
