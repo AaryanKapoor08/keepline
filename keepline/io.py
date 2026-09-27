@@ -1,7 +1,7 @@
 """Loaders for the *product world* inputs: HR roster, area list, and raw work-tool corpus.
 
-The product pipeline reads its inputs only through here. Ground truth is loaded via ``keepline.data.truth_io``
-and may only be imported from ``keepline.data`` and ``keepline.eval``.
+The product pipeline reads its inputs only through here. Ground truth lives in the eval world and may only be
+loaded from ``keepline.data`` and ``keepline.eval`` (see tests/test_isolation.py).
 """
 
 from __future__ import annotations
