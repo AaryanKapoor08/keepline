@@ -389,6 +389,64 @@ class MemoryStore:
             for r in self.conn.execute(q, args)
         ]
 
+    # ------------------------------------------------------------------ graph view
+    def graph_for_person(self, person_id: str, *, as_of: date | None = None, max_facts: int = 60) -> dict[str, Any]:
+        """Knowledge-graph neighbourhood of one employee for the UI: the person, their areas (with expertise score),
+        facts they stated (current + superseded, capped), each fact's receipts, and supersedes links.
+
+        Cheap: a handful of indexed queries. ``as_of`` hides facts learned later and marks versions current as of
+        that date. Node ids are prefixed by type so they never collide.
+        """
+        p = self.person(person_id)
+        if p is None:
+            return {"nodes": [], "links": []}
+        nodes: dict[str, dict[str, Any]] = {}
+        links: list[dict[str, str]] = []
+        pid = f"person:{p.id}"
+        nodes[pid] = {"id": pid, "type": "person", "label": p.name, "role": p.role, "team": p.team,
+                      "departure_date": _iso(p.departure_date)}
+        for e in self.expertise(person_id=person_id):
+            a = self.area(e.area_id)
+            aid = f"area:{e.area_id}"
+            nodes[aid] = {"id": aid, "type": "area", "label": a.name if a else e.area_id, "score": e.score,
+                          "criticality": a.criticality if a else None, "enough_data": e.enough_data}
+            links.append({"source": pid, "target": aid, "rel": "knows"})
+        for e in self.edges(src=person_id, rel=EdgeRel.OWNS):
+            aid = f"area:{e.dst}"
+            if aid in nodes:
+                links.append({"source": pid, "target": aid, "rel": "owns"})
+        facts = [f for f in self.facts(person_id=person_id, as_of=as_of) if f.epistemic == Epistemic.SAID]
+        rank = {k: i for i, k in enumerate(FactKind)}
+        facts.sort(key=lambda f: (rank.get(f.kind, 99), -f.valid_from.toordinal(), f.id))
+        facts = facts[:max_facts]
+        ids = {f.id for f in facts}
+        for f in facts:
+            fid = f"fact:{f.id}"
+            current = f.is_current if as_of is None else (f.valid_to is None or f.valid_to > as_of)
+            nodes[fid] = {"id": fid, "type": "fact", "label": f.text[:120], "kind": str(f.kind),
+                          "is_current": current, "valid_from": _iso(f.valid_from), "valid_to": _iso(f.valid_to),
+                          "confidence": f.confidence, "review_status": str(f.review_status), "area_id": f.area_id}
+            links.append({"source": pid, "target": fid, "rel": "stated"})
+            if f.area_id:
+                aid = f"area:{f.area_id}"
+                if aid not in nodes:
+                    a = self.area(f.area_id)
+                    nodes[aid] = {"id": aid, "type": "area", "label": a.name if a else f.area_id}
+                links.append({"source": fid, "target": aid, "rel": "about"})
+            for d in f.source_doc_ids[:3]:
+                did = f"doc:{d}"
+                nodes.setdefault(did, {"id": did, "type": "doc", "label": d})
+                links.append({"source": fid, "target": did, "rel": "supported_by"})
+            if f.supersedes and f.supersedes in ids:
+                links.append({"source": fid, "target": f"fact:{f.supersedes}", "rel": "supersedes"})
+        docs = {d.id: d for d in self.docs([n["label"] for n in nodes.values() if n["type"] == "doc"])}
+        for n in nodes.values():
+            if n["type"] == "doc" and n["label"] in docs:
+                d = docs[n["label"]]
+                n.update({"label": d.title or f"{d.source_type} {d.container}", "source_type": str(d.source_type),
+                          "url": d.url, "timestamp": _iso(d.timestamp)})
+        return {"nodes": list(nodes.values()), "links": links}
+
     # ------------------------------------------------------------------ expertise
     def expertise(self, *, area_id: str | None = None, person_id: str | None = None) -> list[Expertise]:
         q, args = "SELECT * FROM expertise WHERE 1=1", []

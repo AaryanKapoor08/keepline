@@ -107,6 +107,44 @@ def type_matches(atype: str | None, text: str) -> float:
     return 1.0 if pat.search(text) else 0.0
 
 
+NEG_TERM = "__neg__"
+NEG_Q = re.compile(r"\b(not|never|n't|avoid|shouldn'?t|mustn'?t|don'?t|can'?t)\b|n't\b", re.I)
+NEG_FACT = re.compile(r"\b(never|not|no|don'?t|doesn'?t|mustn'?t|shouldn'?t|can'?t|won'?t|skips?|skipped|except|"
+                      r"avoid|without|off[- ]limits)\b", re.I)
+# Small, general business-vocabulary synonym groups (stemmed). Not tuned to any corpus.
+_SYN_GROUPS = [
+    "rep representative account-manager contact am csm",
+    "password credential creds login passphrase",
+    "start begin kick kickoff",
+    "cutoff deadline window due",
+    "skip except exclude",
+    "owner owns responsible handle lead",
+    "phone number call",
+    "stored lives kept store keep",
+]
+SYNONYMS: dict[str, frozenset[str]] = {}
+for _g in _SYN_GROUPS:
+    _ws = [stem(w.split("-")[-1]) if "-" in w else stem(w) for w in _g.split()]
+    for _w in _ws:
+        SYNONYMS[_w] = SYNONYMS.get(_w, frozenset()) | frozenset(x for x in _ws if x != _w)
+
+
+def term_hit(t: str, fact_terms: frozenset[str], fact_text: str) -> float:
+    """How well a fact covers one question term: exact 1.0; synonym 0.9; abbreviation/prefix ("recon" ~
+    "reconciliation") 0.8; the negation pseudo-term matches negated/skip-style statements."""
+    if t == NEG_TERM:
+        return 1.0 if NEG_FACT.search(fact_text) else 0.0
+    if t in fact_terms:
+        return 1.0
+    if SYNONYMS.get(t, frozenset()) & fact_terms:
+        return 0.9
+    if len(t) >= 4 and not t[:1].isdigit():
+        for x in fact_terms:
+            if len(x) >= 4 and (x.startswith(t) or t.startswith(x)):
+                return 0.8
+    return 0.0
+
+
 SHAPE_WORDS = frozenset(stem(w) for w in "time date day number long often many much phone call email address".split())
 TODAY_WORDS = re.compile(r"\b(today|now|right now|this (morning|afternoon|evening)|tonight)\b", re.I)
 YESNO_Q = re.compile(r"^\s*(can|could|may|should|is it (ok|okay|safe|fine)|am i allowed|do i need)\b", re.I)
@@ -282,7 +320,10 @@ class AnswerAgent:
         "what time / how long / which number" questions the shape words are handled by the answer-type check)."""
         drop = QUESTION_FILLER | (SHAPE_WORDS if atype in ("number", "phone", "email") else frozenset())
         terms = {t for t in tokenize(question) if t not in drop}
-        return {t: self.index.idf.get(t, max(self.index.idf.values(), default=1.0)) for t in terms}
+        if NEG_Q.search(question):
+            terms.add(NEG_TERM)  # "when should X *not* run" is answered by "X skips / never / except ..."
+        top = max(self.index.idf.values(), default=1.0)
+        return {t: (self.index.idf.get(t, top) if t != NEG_TERM else 0.6 * top) for t in terms}
 
     def _vote_area(self, hits: Sequence[Hit]) -> str | None:
         votes: dict[str, float] = defaultdict(float)
@@ -340,9 +381,10 @@ class AnswerAgent:
         area_terms = self.area_lex.get(f.area_id or "", frozenset())
         if f.source_doc_ids:
             area_terms = area_terms | self._context_terms(f.source_doc_ids[0])
-        got = sum(w * (1.0 if t in ft else 0.5 if t in area_terms else 0.0) for t, w in q_terms.items())
+        hit = {t: term_hit(t, ft, f.text) or (0.5 if t in area_terms else 0.0) for t in q_terms}
+        got = sum(w * hit[t] for t, w in q_terms.items())
         key = max(sorted(q_terms), key=lambda t: q_terms[t])
-        missing = 0.0 if (key in ft or key in area_terms) else 1.0
+        missing = 0.0 if hit[key] >= 0.5 else 1.0
         return got / sum(q_terms.values()), missing
 
     def _candidates(

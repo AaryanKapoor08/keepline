@@ -321,7 +321,7 @@ PASSAGE_CHARS = 250
 def passages(d: SourceDoc) -> list[str]:
     """Long docs (wikis, long emails) are indexed as ~600-char passages so one relevant bullet is not drowned by
     BM25 length normalisation; each passage keeps the title for context. Short docs stay whole."""
-    head = f"{d.title}\n" if d.title else ""
+    head = f"{d.title}\n" if d.title and not d.text.lstrip().startswith(d.title.strip()) else ""
     if len(d.text) <= PASSAGE_CHARS * 1.5:
         return [head + d.text]
     out, buf = [], ""
