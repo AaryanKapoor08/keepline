@@ -1,0 +1,201 @@
+[
+  {
+    "id": "reconciliation",
+    "name": "Nightly core-banking reconciliation",
+    "description": "Nightly job that reconciles CoreLink core-banking balances against the general ledger.",
+    "keywords": [
+      "reconciliation",
+      "recon",
+      "nightly job",
+      "general ledger",
+      "GL",
+      "mismatch",
+      "suspense account",
+      "recon report"
+    ],
+    "systems": [
+      "CoreLink",
+      "Jenkins"
+    ],
+    "criticality": 3
+  },
+  {
+    "id": "corelink_api",
+    "name": "CoreLink core-banking API",
+    "description": "Integration with the CoreLink core-banking vendor: API keys, webhooks, vendor support.",
+    "keywords": [
+      "CoreLink",
+      "core banking",
+      "API key",
+      "API",
+      "vendor portal",
+      "webhook",
+      "rate limit",
+      "sandbox"
+    ],
+    "systems": [
+      "CoreLink"
+    ],
+    "criticality": 3
+  },
+  {
+    "id": "ach_payments",
+    "name": "ACH / EFT payments",
+    "description": "Outbound and inbound EFT batches through Payments Canada (AFT/ACSS), returns, direct deposits.",
+    "keywords": [
+      "ACH",
+      "EFT",
+      "AFT",
+      "Payments Canada",
+      "batch",
+      "CPA 005",
+      "returns",
+      "direct deposit",
+      "cutoff"
+    ],
+    "systems": [
+      "ACH batch server",
+      "Payments Canada ACSS"
+    ],
+    "criticality": 3
+  },
+  {
+    "id": "payroll",
+    "name": "Payroll",
+    "description": "Bi-weekly staff payroll, CRA remittances, T4s.",
+    "keywords": [
+      "payroll",
+      "pay run",
+      "T4",
+      "CRA",
+      "remittance",
+      "timesheets",
+      "pay stub",
+      "Paylane"
+    ],
+    "systems": [
+      "Paylane"
+    ],
+    "criticality": 3
+  },
+  {
+    "id": "member_portal",
+    "name": "Member portal & online banking",
+    "description": "Member-facing online banking portal and mobile app: logins, 2FA, password resets, outages.",
+    "keywords": [
+      "member portal",
+      "online banking",
+      "portal",
+      "login",
+      "2FA",
+      "mobile app",
+      "password reset"
+    ],
+    "systems": [
+      "Member Portal",
+      "Twilio"
+    ],
+    "criticality": 2
+  },
+  {
+    "id": "backups_dr",
+    "name": "Backups & disaster recovery",
+    "description": "Server backups, offsite copies, replication, and the disaster-recovery plan.",
+    "keywords": [
+      "backup",
+      "restore",
+      "DR",
+      "disaster recovery",
+      "Veeam",
+      "replication",
+      "retention",
+      "offsite"
+    ],
+    "systems": [
+      "Veeam",
+      "NAS"
+    ],
+    "criticality": 3
+  },
+  {
+    "id": "fintrac_reporting",
+    "name": "FINTRAC reporting & AML",
+    "description": "Regulatory reporting to FINTRAC (LCTR, STR, EFTR) and the AML compliance program.",
+    "keywords": [
+      "FINTRAC",
+      "LCTR",
+      "large cash",
+      "STR",
+      "suspicious transaction",
+      "AML",
+      "EFTR",
+      "compliance report"
+    ],
+    "systems": [
+      "FINTRAC API",
+      "AML monitor"
+    ],
+    "criticality": 3
+  },
+  {
+    "id": "identity_access",
+    "name": "Identity & access",
+    "description": "Okta, legacy Active Directory, admin rights, service accounts, joiner/leaver access.",
+    "keywords": [
+      "Okta",
+      "Active Directory",
+      "AD",
+      "admin rights",
+      "MFA",
+      "access request",
+      "offboarding",
+      "1Password",
+      "service account"
+    ],
+    "systems": [
+      "Okta",
+      "Active Directory",
+      "1Password"
+    ],
+    "criticality": 2
+  },
+  {
+    "id": "card_processing",
+    "name": "Debit card processing",
+    "description": "Debit card issuing and processing through the card vendor: Interac, disputes, card orders.",
+    "keywords": [
+      "debit card",
+      "card",
+      "Interac",
+      "chargeback",
+      "dispute",
+      "card processor",
+      "PIN",
+      "card order"
+    ],
+    "systems": [
+      "Tidewater Card Services"
+    ],
+    "criticality": 2
+  },
+  {
+    "id": "ssl_dns",
+    "name": "SSL certificates & DNS",
+    "description": "TLS certificates for member-facing sites, DNS zones, and the domain registrar.",
+    "keywords": [
+      "SSL",
+      "TLS",
+      "certificate",
+      "cert",
+      "DNS",
+      "domain",
+      "registrar",
+      "harbourlinecu.ca"
+    ],
+    "systems": [
+      "Registrar",
+      "DNS"
+    ],
+    "criticality": 2
+  }
+]

@@ -1,0 +1,4356 @@
+[
+  {
+    "id": "T001",
+    "kind": "landmine",
+    "area_id": "reconciliation",
+    "statement": "The nightly reconciliation job must skip the 1st of the month (CoreLink's month-start rollover makes the numbers never line up).",
+    "answer_keywords": [
+      [
+        "1st",
+        "first"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-11-04",
+    "valid_to": "2026-05-19",
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Superseded on 2026-05-19 after the May 15 incident."
+  },
+  {
+    "id": "T002",
+    "kind": "landmine",
+    "area_id": "reconciliation",
+    "statement": "The nightly reconciliation job must skip both the 1st and the 15th of the month; CoreLink's mid-month interest posting batch on the 15th double-posts into the suspense account.",
+    "answer_keywords": [
+      [
+        "1st",
+        "first"
+      ],
+      [
+        "15th",
+        "fifteenth"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-05-19",
+    "valid_to": null,
+    "supersedes": "T001",
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Supersedes the 1st-only rule. Triggered by the 2026-05-15 reconciliation incident."
+  },
+  {
+    "id": "T003",
+    "kind": "fact",
+    "area_id": "reconciliation",
+    "statement": "The nightly reconciliation job starts at 01:30 Atlantic.",
+    "answer_keywords": [
+      [
+        "1:30",
+        "01:30",
+        "1.30"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-02-01",
+    "valid_to": "2026-06-08",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T004",
+    "kind": "decision",
+    "area_id": "reconciliation",
+    "statement": "Since 2026-06-08 the nightly reconciliation job starts at 02:15 Atlantic, after CoreLink's end-of-day extract lands (~02:05).",
+    "answer_keywords": [
+      [
+        "2:15",
+        "02:15",
+        "2.15"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-06-08",
+    "valid_to": null,
+    "supersedes": "T003",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Conflict: Dave repeats the old 01:30 time from a stale ops calendar; Sarah (owner) corrects him. Sarah's 02:15 is authoritative. Conflict: dave stated an outdated/wrong version (\"Pretty sure recon still kicks off at 1:30 in the morning, that's what's on the ops calendar anyway.\"); sarah corrected it."
+  },
+  {
+    "id": "T005",
+    "kind": "fact",
+    "area_id": "reconciliation",
+    "statement": "The daily reconciliation report is emailed only to Priya.",
+    "answer_keywords": [
+      [
+        "Priya",
+        "priya.nair"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-02-01",
+    "valid_to": "2026-07-06",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T006",
+    "kind": "decision",
+    "area_id": "reconciliation",
+    "statement": "Since 2026-07-06 the daily reconciliation report goes to the finance@harbourlinecu.ca distribution list (Priya and Dave) instead of Priya alone.",
+    "answer_keywords": [
+      [
+        "finance@"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya",
+      "dave"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-07-06",
+    "valid_to": null,
+    "supersedes": "T005",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T007",
+    "kind": "owner",
+    "area_id": "reconciliation",
+    "statement": "Sarah Chen owns the nightly CoreLink reconciliation job.",
+    "answer_keywords": [
+      [
+        "Sarah",
+        "Chen"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2021-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T008",
+    "kind": "fact",
+    "area_id": "reconciliation",
+    "statement": "The reconciliation job is the 'recon-nightly' Jenkins job on the on-prem host jenkins01.",
+    "answer_keywords": [
+      [
+        "jenkins01",
+        "jenkins 01"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T009",
+    "kind": "fact",
+    "area_id": "reconciliation",
+    "statement": "Unreconciled differences are posted to suspense GL account 1995.",
+    "answer_keywords": [
+      [
+        "1995"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2021-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T010",
+    "kind": "landmine",
+    "area_id": "reconciliation",
+    "statement": "Never re-run the reconciliation manually before CoreLink's end-of-day extract has landed; it reconciles against a partial file and auto-posts wrong adjustments.",
+    "answer_keywords": [
+      [
+        "extract",
+        "EOD",
+        "end of day",
+        "end-of-day"
+      ],
+      [
+        "rerun",
+        "re-run",
+        "re run",
+        "manually",
+        "by hand"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-09-12",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T011",
+    "kind": "decision",
+    "area_id": "reconciliation",
+    "statement": "Reconciliation tolerance is $0.50 per account; anything above auto-opens a ticket.",
+    "answer_keywords": [
+      [
+        "0.50",
+        "50 cents",
+        "fifty cents",
+        ".50"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2025-02-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T012",
+    "kind": "procedure",
+    "area_id": "reconciliation",
+    "statement": "To clear a reconciliation mismatch: pull the CoreLink GL extract, compare it with the Jenkins log, then post the correcting entry only with Priya's approval.",
+    "answer_keywords": [
+      [
+        "Priya"
+      ],
+      [
+        "approv",
+        "sign off",
+        "sign-off",
+        "signs off",
+        "okay",
+        "ok from"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T013",
+    "kind": "recurring_task",
+    "area_id": "reconciliation",
+    "statement": "Every month Sarah sends Priya the reconciliation sign-off package by the 3rd business day.",
+    "answer_keywords": [
+      [
+        "3rd business day",
+        "third business day",
+        "3 business days",
+        "three business days"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T014",
+    "kind": "decision",
+    "area_id": "reconciliation",
+    "statement": "In April 2026 Harbourline decided not to buy CoreLink's hosted reconciliation add-on and to keep the in-house job.",
+    "answer_keywords": [
+      [
+        "add-on",
+        "addon",
+        "module"
+      ],
+      [
+        "in-house",
+        "in house",
+        "ourselves",
+        "our own",
+        "keep"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2026-04-22",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T015",
+    "kind": "fact",
+    "area_id": "reconciliation",
+    "statement": "Since July 2026 Aisha is secondary on-call for reconciliation failures (Sarah primary).",
+    "answer_keywords": [
+      [
+        "Aisha"
+      ],
+      [
+        "secondary",
+        "backup",
+        "second"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-07-13",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T016",
+    "kind": "access",
+    "area_id": "reconciliation",
+    "statement": "The reconciliation service-account credentials live in Sarah's personal 1Password vault, not the shared Engineering vault.",
+    "answer_keywords": [
+      [
+        "personal"
+      ],
+      [
+        "1Password",
+        "1pw",
+        "one password"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": "Only in a Sarah<->Aisha DM; product excludes DMs by default -> route to Sarah."
+  },
+  {
+    "id": "T017",
+    "kind": "fact",
+    "area_id": "reconciliation",
+    "statement": "The 1st is skipped because CoreLink's month-start fee sweep posts after the EOD extract is cut, so the extract is always missing that batch.",
+    "answer_keywords": [
+      [
+        "fee sweep",
+        "fee batch",
+        "fees"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-11-04",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": "Never written down; gap-interview material."
+  },
+  {
+    "id": "T018",
+    "kind": "procedure",
+    "area_id": "reconciliation",
+    "statement": "If Jenkins is down, recon can be run from a fallback Python script on the VM hcu-util02.",
+    "answer_keywords": [
+      [
+        "hcu-util02",
+        "util02"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T019",
+    "kind": "fact",
+    "area_id": "reconciliation",
+    "statement": "CoreLink product code 77 maps to two GL accounts, which is why it always shows a small variance.",
+    "answer_keywords": [
+      [
+        "77"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-08-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T020",
+    "kind": "landmine",
+    "area_id": "corelink_api",
+    "statement": "Never rotate the CoreLink API key on a Friday: the vendor's weekend batch sync locks the account until Monday.",
+    "answer_keywords": [
+      [
+        "Friday",
+        "Fridays"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-10-16",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Origin: October 2023 weekend lockout."
+  },
+  {
+    "id": "T021",
+    "kind": "vendor_contact",
+    "area_id": "corelink_api",
+    "statement": "Harbourline's account rep at CoreLink is Dan Holt.",
+    "answer_keywords": [
+      [
+        "Dan Holt",
+        "Holt"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-03-01",
+    "valid_to": "2026-06-15",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T022",
+    "kind": "vendor_contact",
+    "area_id": "corelink_api",
+    "statement": "Since 2026-06-15 Harbourline's CoreLink account rep is Maria Santos (maria.santos@corelink-banking.com), replacing Dan Holt.",
+    "answer_keywords": [
+      [
+        "Maria Santos",
+        "Santos"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-06-15",
+    "valid_to": null,
+    "supersedes": "T021",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T023",
+    "kind": "fact",
+    "area_id": "corelink_api",
+    "statement": "All Harbourline integrations call CoreLink API v2.",
+    "answer_keywords": [
+      [
+        "v2",
+        "version 2"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2021-09-01",
+    "valid_to": "2026-07-20",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T024",
+    "kind": "decision",
+    "area_id": "corelink_api",
+    "statement": "On 2026-07-20 portal and ACH traffic moved to CoreLink API v3; v2 is sunset on 2026-10-31.",
+    "answer_keywords": [
+      [
+        "v3",
+        "version 3"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-07-20",
+    "valid_to": null,
+    "supersedes": "T023",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T025",
+    "kind": "recurring_task",
+    "area_id": "corelink_api",
+    "statement": "The CoreLink API key is rotated every 90 days.",
+    "answer_keywords": [
+      [
+        "90 days",
+        "90-day",
+        "ninety"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-01-15",
+    "valid_to": "2026-04-27",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T026",
+    "kind": "recurring_task",
+    "area_id": "corelink_api",
+    "statement": "Since 2026-04-27 the CoreLink API key must be rotated every 60 days (new CoreLink security policy).",
+    "answer_keywords": [
+      [
+        "60 days",
+        "60-day",
+        "sixty"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-04-27",
+    "valid_to": null,
+    "supersedes": "T025",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T027",
+    "kind": "access",
+    "area_id": "corelink_api",
+    "statement": "CoreLink API keys are stored in the 1Password 'Core Integrations' vault; only Sarah and Dave have access.",
+    "answer_keywords": [
+      [
+        "Core Integrations"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T028",
+    "kind": "access",
+    "area_id": "corelink_api",
+    "statement": "Sarah is the only admin on the CoreLink partner portal; Dave has read-only access.",
+    "answer_keywords": [
+      [
+        "Sarah"
+      ],
+      [
+        "admin"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2021-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T029",
+    "kind": "vendor_contact",
+    "area_id": "corelink_api",
+    "statement": "CoreLink support: 1-877-555-0142 or support@corelink-banking.com; quote client ID HCU-4471.",
+    "answer_keywords": [
+      [
+        "1-877-555-0142",
+        "877-555-0142",
+        "support@corelink-banking.com"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2021-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T030",
+    "kind": "landmine",
+    "area_id": "corelink_api",
+    "statement": "The CoreLink API allows 600 requests per minute per key; exceeding it locks the key for 15 minutes, so bulk scripts must be throttled.",
+    "answer_keywords": [
+      [
+        "600"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T031",
+    "kind": "owner",
+    "area_id": "corelink_api",
+    "statement": "Sarah Chen owns the CoreLink API integration.",
+    "answer_keywords": [
+      [
+        "Sarah",
+        "Chen"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2021-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T032",
+    "kind": "procedure",
+    "area_id": "corelink_api",
+    "statement": "CoreLink key rotation: create the new key in the partner portal, update 1Password, deploy it to the app servers, restart the portal API, and revoke the old key after a 24-hour overlap.",
+    "answer_keywords": [
+      [
+        "24 hours",
+        "24h",
+        "24-hour",
+        "24 hr"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-10-20",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T033",
+    "kind": "fact",
+    "area_id": "corelink_api",
+    "statement": "CoreLink webhooks post to https://api.harbourlinecu.ca/hooks/corelink.",
+    "answer_keywords": [
+      [
+        "/hooks/corelink"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T034",
+    "kind": "procedure",
+    "area_id": "corelink_api",
+    "statement": "CoreLink only accepts traffic from allowlisted egress IPs; adding a new server takes a CoreLink ticket and about 5 business days.",
+    "answer_keywords": [
+      [
+        "5 business days",
+        "five business days"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T035",
+    "kind": "decision",
+    "area_id": "corelink_api",
+    "statement": "The CoreLink contract auto-renews on Jan 31 unless 90 days' notice is given, so any change must be communicated by Nov 2.",
+    "answer_keywords": [
+      [
+        "Nov 2",
+        "November 2",
+        "Nov. 2"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": "Only in a Sarah<->Dave DM."
+  },
+  {
+    "id": "T036",
+    "kind": "recurring_task",
+    "area_id": "corelink_api",
+    "statement": "The CoreLink sandbox tenant's test data is refreshed on the first Sunday of every month.",
+    "answer_keywords": [
+      [
+        "first Sunday",
+        "1st Sunday"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T037",
+    "kind": "vendor_contact",
+    "area_id": "corelink_api",
+    "statement": "Beyond the account rep, CoreLink's escalation contact is Raj Patel, VP Client Services, whom only Sarah has met.",
+    "answer_keywords": [
+      [
+        "Raj Patel",
+        "Patel"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2025-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T038",
+    "kind": "fact",
+    "area_id": "corelink_api",
+    "statement": "Harbourline uses a patched fork of the CoreLink Python client that fixes a v3 pagination bug.",
+    "answer_keywords": [
+      [
+        "fork",
+        "patched"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-07-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T039",
+    "kind": "landmine",
+    "area_id": "ssl_dns",
+    "statement": "The member-portal SSL certificate renews through the Bluenose Domains registrar account, which is tied to sarah.chen@harbourlinecu.ca; if her mailbox is closed, renewal notices and 2FA codes go nowhere.",
+    "answer_keywords": [
+      [
+        "Bluenose"
+      ],
+      [
+        "sarah.chen",
+        "Sarah's"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2020-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T040",
+    "kind": "owner",
+    "area_id": "ssl_dns",
+    "statement": "Sarah Chen owns SSL certificates and DNS for harbourlinecu.ca.",
+    "answer_keywords": [
+      [
+        "Sarah",
+        "Chen"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2020-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T041",
+    "kind": "recurring_task",
+    "area_id": "ssl_dns",
+    "statement": "The *.harbourlinecu.ca wildcard certificate expires on October 2 each year; Sarah renews it in mid-September.",
+    "answer_keywords": [
+      [
+        "Oct 2",
+        "October 2",
+        "Oct. 2",
+        "2026-10-02",
+        "October 2nd",
+        "Oct 2nd"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2020-10-02",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T042",
+    "kind": "procedure",
+    "area_id": "ssl_dns",
+    "statement": "Cert renewal: generate the CSR on lb01, buy through Bluenose, upload the bundle to the load balancer and the Okta custom domain, and include the intermediate chain.",
+    "answer_keywords": [
+      [
+        "intermediate"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2021-09-15",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T043",
+    "kind": "fact",
+    "area_id": "ssl_dns",
+    "statement": "The harbourlinecu.ca DNS zone is hosted on Bluenose Domains' DNS.",
+    "answer_keywords": [
+      [
+        "Bluenose"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2020-09-01",
+    "valid_to": "2026-08-10",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T044",
+    "kind": "decision",
+    "area_id": "ssl_dns",
+    "statement": "On 2026-08-10 DNS hosting for harbourlinecu.ca moved to Cloudflare; Bluenose remains the registrar.",
+    "answer_keywords": [
+      [
+        "Cloudflare"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "nadia"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-08-10",
+    "valid_to": null,
+    "supersedes": "T043",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T045",
+    "kind": "access",
+    "area_id": "ssl_dns",
+    "statement": "Sarah and Nadia are the admins on the Cloudflare DNS account.",
+    "answer_keywords": [
+      [
+        "Nadia"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "nadia"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-08-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T046",
+    "kind": "fact",
+    "area_id": "ssl_dns",
+    "statement": "The api.harbourlinecu.ca certificate is a paid one-year cert renewed manually through Bluenose.",
+    "answer_keywords": [
+      [
+        "api.harbourlinecu.ca",
+        "api cert",
+        "API cert"
+      ],
+      [
+        "manual",
+        "by hand",
+        "once a year",
+        "yearly"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-06-29",
+    "valid_to": "2026-06-29",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T047",
+    "kind": "decision",
+    "area_id": "ssl_dns",
+    "statement": "Since 2026-06-29 the api.harbourlinecu.ca certificate is a Let's Encrypt cert auto-renewed by certbot on lb01.",
+    "answer_keywords": [
+      [
+        "Let's Encrypt",
+        "LetsEncrypt",
+        "certbot"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-06-29",
+    "valid_to": null,
+    "supersedes": "T046",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T048",
+    "kind": "decision",
+    "area_id": "ssl_dns",
+    "statement": "In April 2026 the DMARC policy for harbourlinecu.ca was moved to quarantine.",
+    "answer_keywords": [
+      [
+        "quarantine"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "nadia"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-04-14",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T049",
+    "kind": "fact",
+    "area_id": "ssl_dns",
+    "statement": "The harbourlinecu.ca domain registration runs to March 14, 2027 with auto-renew on.",
+    "answer_keywords": [
+      [
+        "2027"
+      ],
+      [
+        "March",
+        "Mar"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-03-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T050",
+    "kind": "access",
+    "area_id": "ssl_dns",
+    "statement": "The Bluenose 2FA backup codes are in a sealed envelope in Sarah's desk drawer.",
+    "answer_keywords": [
+      [
+        "backup codes",
+        "recovery codes"
+      ],
+      [
+        "drawer",
+        "desk"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2021-01-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": "Only in a Sarah<->Dave DM."
+  },
+  {
+    "id": "T051",
+    "kind": "decision",
+    "area_id": "ssl_dns",
+    "statement": "The Bluenose account was opened in 2020 under Sarah's email because the previous IT contractor's registrar login was lost.",
+    "answer_keywords": [
+      [
+        "contractor"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "mike"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2020-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T052",
+    "kind": "fact",
+    "area_id": "ssl_dns",
+    "statement": "A forgotten legacy cert on the old rates.harbourlinecu.ca rate-sheet server expires in January 2027.",
+    "answer_keywords": [
+      [
+        "rates.harbourlinecu.ca",
+        "rates server",
+        "rate-sheet",
+        "rate sheet"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2025-01-20",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T053",
+    "kind": "fact",
+    "area_id": "ssl_dns",
+    "statement": "Certificate-expiry alerts from UptimeRobot are sent only to Sarah's email.",
+    "answer_keywords": [
+      [
+        "UptimeRobot",
+        "Uptime Robot"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T054",
+    "kind": "landmine",
+    "area_id": "ach_payments",
+    "statement": "Never restart the ACH batch server (or its batch service) within 30 minutes of a Payments Canada exchange cutoff: a restart mid-transmission leaves a partial AFT file that gets resent as a duplicate.",
+    "answer_keywords": [
+      [
+        "restart",
+        "reboot",
+        "bounce"
+      ],
+      [
+        "30 min",
+        "thirty min",
+        "half an hour",
+        "half hour"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-03-18",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Planted landmine #3. Explained by the April near-miss where a Windows update rebooted hcu-ach01."
+  },
+  {
+    "id": "T055",
+    "kind": "fact",
+    "area_id": "ach_payments",
+    "statement": "The last ACH exchange window of the day closes at 4:30 pm Atlantic; files must be transmitted before then.",
+    "answer_keywords": [
+      [
+        "4:30",
+        "16:30",
+        "four-thirty",
+        "four thirty"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "sarah"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2025-02-03",
+    "valid_to": "2026-06-01",
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T056",
+    "kind": "fact",
+    "area_id": "ach_payments",
+    "statement": "Since June 1, 2026 the last ACH exchange window closes at 3:45 pm Atlantic (moved earlier by our clearing sponsor).",
+    "answer_keywords": [
+      [
+        "3:45",
+        "15:45",
+        "quarter to four"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "sarah"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2026-06-01",
+    "valid_to": null,
+    "supersedes": "T055",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Conflict: Jen restates the old 4:30 cutoff in July; Priya corrects her. 3:45 is authoritative. Conflict: jen stated an outdated/wrong version ('Pretty sure the last ACH window still closes at 4:30, right? Telling the member we have till then.'); priya corrected it."
+  },
+  {
+    "id": "T057",
+    "kind": "recurring_task",
+    "area_id": "ach_payments",
+    "statement": "The ACH returns file is pulled from the clearing SFTP by a scheduled job at 7:00 am each business day.",
+    "answer_keywords": [
+      [
+        "7:00",
+        "07:00",
+        "7am",
+        "7 am"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-09-09",
+    "valid_to": "2026-05-11",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T058",
+    "kind": "recurring_task",
+    "area_id": "ach_payments",
+    "statement": "Since May 11, 2026 the ACH returns file pickup job runs at 6:15 am each business day so Priya has the returns before the branch opens.",
+    "answer_keywords": [
+      [
+        "6:15",
+        "06:15",
+        "quarter past six"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-05-11",
+    "valid_to": null,
+    "supersedes": "T057",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T059",
+    "kind": "owner",
+    "area_id": "ach_payments",
+    "statement": "Sarah owns the ACH batch server and EFT file generation; Priya owns the settlement and returns side on the finance end.",
+    "answer_keywords": [
+      [
+        "Sarah"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya",
+      "dave",
+      "aisha"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2021-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T060",
+    "kind": "recurring_task",
+    "area_id": "ach_payments",
+    "statement": "Every business morning Priya works the ACH returns report and posts returned items back to member accounts by 10:00 am.",
+    "answer_keywords": [
+      [
+        "return"
+      ],
+      [
+        "10:00",
+        "10am",
+        "10 am",
+        "ten o'clock"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2023-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T061",
+    "kind": "access",
+    "area_id": "ach_payments",
+    "statement": "The SFTP key used to transmit ACH files to the clearing sponsor is stored in the 1Password vault 'Payments-Prod'; only Sarah and Priya have access.",
+    "answer_keywords": [
+      [
+        "Payments-Prod",
+        "payments prod"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "priya"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-02-12",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T062",
+    "kind": "vendor_contact",
+    "area_id": "ach_payments",
+    "statement": "Our ACH clearing sponsor is Bluenose Central; our contact there is Rachel Oakes in payment operations.",
+    "answer_keywords": [
+      [
+        "Rachel"
+      ],
+      [
+        "Bluenose"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "sarah"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2025-04-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T063",
+    "kind": "fact",
+    "area_id": "ach_payments",
+    "statement": "Outbound ACH files are CPA 005 format with fixed 1464-character records.",
+    "answer_keywords": [
+      [
+        "1464"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2020-06-15",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T064",
+    "kind": "fact",
+    "area_id": "ach_payments",
+    "statement": "The ACH batch server is hcu-ach01, a Windows VM in the Burnside data centre rack.",
+    "answer_keywords": [
+      [
+        "hcu-ach01",
+        "ach01"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-10-03",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T065",
+    "kind": "decision",
+    "area_id": "ach_payments",
+    "statement": "After the April 2026 near-miss, Sarah added a hash check that blocks transmitting an ACH file identical to one already sent (duplicate-file guard).",
+    "answer_keywords": [
+      [
+        "hash",
+        "checksum"
+      ],
+      [
+        "duplicate",
+        "dupe",
+        "same file"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-04-14",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T066",
+    "kind": "fact",
+    "area_id": "ach_payments",
+    "statement": "Business members' payroll direct-deposit files must reach us at least two business days before the pay date.",
+    "answer_keywords": [
+      [
+        "two business days",
+        "2 business days",
+        "two banking days",
+        "2 banking days"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "sarah",
+      "jen"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2023-01-16",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T067",
+    "kind": "procedure",
+    "area_id": "ach_payments",
+    "statement": "If an ACH file is rejected, increment the file creation number (FCN) before resending; never reuse an FCN.",
+    "answer_keywords": [
+      [
+        "file creation number",
+        "FCN"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2021-05-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T068",
+    "kind": "fact",
+    "area_id": "ach_payments",
+    "statement": "The daily outbound ACH limit is $2 million; anything above needs Dave's sign-off.",
+    "answer_keywords": [
+      [
+        "2 million",
+        "$2M",
+        "2M",
+        "two million"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "dave",
+      "sarah"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2025-11-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T069",
+    "kind": "landmine",
+    "area_id": "ach_payments",
+    "statement": "The ACH batch builder silently truncates payee names longer than 30 characters, which causes some returns for name mismatch.",
+    "answer_keywords": [
+      [
+        "30",
+        "thirty"
+      ],
+      [
+        "truncat",
+        "cut off",
+        "chop"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-08-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T070",
+    "kind": "procedure",
+    "area_id": "ach_payments",
+    "statement": "The ACH resend script (resend.ps1) must be run with the -NoRenumber flag for partial resends, otherwise it renumbers every record.",
+    "answer_keywords": [
+      [
+        "NoRenumber"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-04-04",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T071",
+    "kind": "recurring_task",
+    "area_id": "ach_payments",
+    "statement": "The ACH transmission signing certificate on hcu-ach01 expires in November 2026; renewal needs Priya's approval in the clearing sponsor's portal.",
+    "answer_keywords": [
+      [
+        "November",
+        "Nov"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2026-08-20",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": ""
+  },
+  {
+    "id": "T072",
+    "kind": "owner",
+    "area_id": "member_portal",
+    "statement": "Aisha is the day-to-day owner of the member portal (took it over from Sarah in spring 2026); Sarah still knows the backend.",
+    "answer_keywords": [
+      [
+        "Aisha"
+      ]
+    ],
+    "known_by": [
+      "dave",
+      "aisha",
+      "sarah",
+      "jen"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2026-04-06",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T073",
+    "kind": "fact",
+    "area_id": "member_portal",
+    "statement": "Member portal sessions time out after 15 minutes of inactivity.",
+    "answer_keywords": [
+      [
+        "15 min",
+        "fifteen min"
+      ]
+    ],
+    "known_by": [
+      "aisha",
+      "sarah",
+      "jen"
+    ],
+    "stated_by": "aisha",
+    "valid_from": "2024-11-01",
+    "valid_to": "2026-07-06",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T074",
+    "kind": "decision",
+    "area_id": "member_portal",
+    "statement": "Since July 6, 2026 member portal sessions time out after 10 minutes of inactivity (audit recommendation).",
+    "answer_keywords": [
+      [
+        "10 min",
+        "ten min"
+      ]
+    ],
+    "known_by": [
+      "aisha",
+      "sarah",
+      "jen",
+      "dave"
+    ],
+    "stated_by": "aisha",
+    "valid_from": "2026-07-06",
+    "valid_to": null,
+    "supersedes": "T073",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T075",
+    "kind": "procedure",
+    "area_id": "member_portal",
+    "statement": "Member services resets portal passwords from the admin console after the member answers two security questions.",
+    "answer_keywords": [
+      [
+        "security question"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin",
+      "aisha"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2023-03-01",
+    "valid_to": "2026-05-19",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T076",
+    "kind": "procedure",
+    "area_id": "member_portal",
+    "statement": "Since May 19, 2026 members must reset their own portal password via 'Forgot password' with an SMS code; staff may only unlock accounts, not reset passwords.",
+    "answer_keywords": [
+      [
+        "self-serve",
+        "self serve",
+        "Forgot password",
+        "forgot password"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin",
+      "aisha"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2026-05-19",
+    "valid_to": null,
+    "supersedes": "T075",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T077",
+    "kind": "landmine",
+    "area_id": "member_portal",
+    "statement": "Never reset a member's 2FA over the phone without calling them back on the number on file in CoreLink (a social-engineering attempt in March 2026 nearly succeeded).",
+    "answer_keywords": [
+      [
+        "call back",
+        "callback",
+        "call them back",
+        "call-back"
+      ],
+      [
+        "on file"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin",
+      "aisha"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2026-03-24",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T078",
+    "kind": "procedure",
+    "area_id": "member_portal",
+    "statement": "Planned portal maintenance needs the maintenance banner posted at least 48 hours ahead.",
+    "answer_keywords": [
+      [
+        "48 hours",
+        "48h",
+        "48 hrs",
+        "two days",
+        "2 days"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "aisha"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2024-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T079",
+    "kind": "recurring_task",
+    "area_id": "member_portal",
+    "statement": "Portal deploys only go out on Tuesday nights between 10 pm and midnight.",
+    "answer_keywords": [
+      [
+        "Tuesday",
+        "Tues"
+      ]
+    ],
+    "known_by": [
+      "aisha",
+      "sarah"
+    ],
+    "stated_by": "aisha",
+    "valid_from": "2025-01-14",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T080",
+    "kind": "vendor_contact",
+    "area_id": "member_portal",
+    "statement": "The portal front end is hosted by Seabright Digital; our account manager there is Kyle Maddox.",
+    "answer_keywords": [
+      [
+        "Kyle"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T081",
+    "kind": "access",
+    "area_id": "member_portal",
+    "statement": "The Twilio (SMS codes) console is owned by the shared eng-alerts@harbourlinecu.ca mailbox; the login is in the 1Password Engineering vault.",
+    "answer_keywords": [
+      [
+        "eng-alerts"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-02-20",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T082",
+    "kind": "recurring_task",
+    "area_id": "member_portal",
+    "statement": "The monthly e-statement generation job runs only on hcu-web02, on the 3rd of each month.",
+    "answer_keywords": [
+      [
+        "web02"
+      ],
+      [
+        "3rd",
+        "third"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "aisha"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2023-09-03",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T083",
+    "kind": "fact",
+    "area_id": "member_portal",
+    "statement": "Portal accounts lock after 5 failed login attempts; staff can unlock them from the admin console.",
+    "answer_keywords": [
+      [
+        "5 failed",
+        "five failed",
+        "5 wrong",
+        "five wrong",
+        "5 bad",
+        "five bad"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin",
+      "aisha"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2022-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T084",
+    "kind": "decision",
+    "area_id": "member_portal",
+    "statement": "Mobile app releases are frozen until October 2026 to cover the engineering handover.",
+    "answer_keywords": [
+      [
+        "October",
+        "Oct"
+      ]
+    ],
+    "known_by": [
+      "dave",
+      "aisha",
+      "sarah"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2026-08-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T085",
+    "kind": "procedure",
+    "area_id": "member_portal",
+    "statement": "During a portal outage Jen posts the outage script to member services and updates the phone IVR message.",
+    "answer_keywords": [
+      [
+        "IVR",
+        "phone message",
+        "phone greeting"
+      ]
+    ],
+    "known_by": [
+      "jen"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2024-01-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T086",
+    "kind": "fact",
+    "area_id": "member_portal",
+    "statement": "The portal admin console has an 'impersonate member' mode whose audit log goes only to a local file on the web server, not to the SIEM.",
+    "answer_keywords": [
+      [
+        "impersonat"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2022-07-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T087",
+    "kind": "landmine",
+    "area_id": "member_portal",
+    "statement": "The e-statement job fails silently if the PDF share is more than 90% full.",
+    "answer_keywords": [
+      [
+        "90",
+        "ninety"
+      ]
+    ],
+    "known_by": [
+      "sarah"
+    ],
+    "stated_by": "sarah",
+    "valid_from": "2024-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T088",
+    "kind": "owner",
+    "area_id": "identity_access",
+    "statement": "Nadia owns Okta and access requests; Mike handles the legacy Active Directory.",
+    "answer_keywords": [
+      [
+        "Nadia"
+      ]
+    ],
+    "known_by": [
+      "dave",
+      "nadia",
+      "mike"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2023-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T089",
+    "kind": "access",
+    "area_id": "identity_access",
+    "statement": "Only Nadia and Sarah are Okta super-admins.",
+    "answer_keywords": [
+      [
+        "Nadia"
+      ],
+      [
+        "Sarah"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "sarah",
+      "dave"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2024-08-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T090",
+    "kind": "access",
+    "area_id": "identity_access",
+    "statement": "Sarah is the only owner of the Harbourline GitHub organization.",
+    "answer_keywords": [
+      [
+        "Sarah"
+      ],
+      [
+        "GitHub",
+        "github"
+      ]
+    ],
+    "known_by": [
+      "sarah",
+      "nadia",
+      "aisha"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2021-01-11",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T091",
+    "kind": "fact",
+    "area_id": "identity_access",
+    "statement": "Staff Okta MFA allows SMS codes or Okta Verify.",
+    "answer_keywords": [
+      [
+        "SMS",
+        "text message"
+      ]
+    ],
+    "known_by": [
+      "nadia"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2023-02-01",
+    "valid_to": "2026-06-15",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T092",
+    "kind": "decision",
+    "area_id": "identity_access",
+    "statement": "Since June 15, 2026 staff Okta MFA is Okta Verify push only; SMS was removed.",
+    "answer_keywords": [
+      [
+        "Okta Verify"
+      ],
+      [
+        "push"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2026-06-15",
+    "valid_to": null,
+    "supersedes": "T091",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T093",
+    "kind": "procedure",
+    "area_id": "identity_access",
+    "statement": "Admin-rights requests are approved by Dave.",
+    "answer_keywords": [
+      [
+        "Dave"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2022-01-01",
+    "valid_to": "2026-04-20",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T094",
+    "kind": "procedure",
+    "area_id": "identity_access",
+    "statement": "Since April 20, 2026 admin-rights requests need two approvals: Nadia and Dave.",
+    "answer_keywords": [
+      [
+        "Nadia"
+      ],
+      [
+        "Dave"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2026-04-20",
+    "valid_to": null,
+    "supersedes": "T093",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T095",
+    "kind": "landmine",
+    "area_id": "identity_access",
+    "statement": "Do not disable a leaver's Okta account until ownership of their 1Password shared vaults has been transferred; 1Password is SSO'd through Okta and the vaults become unrecoverable.",
+    "answer_keywords": [
+      [
+        "1Password"
+      ],
+      [
+        "transfer",
+        "hand over",
+        "handed over",
+        "reassign"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "mike"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2025-02-10",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T096",
+    "kind": "recurring_task",
+    "area_id": "identity_access",
+    "statement": "Nadia runs a quarterly access review (first week of January, April, July and October) and Dave signs it off.",
+    "answer_keywords": [
+      [
+        "quarter",
+        "every three months"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2024-01-02",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T097",
+    "kind": "procedure",
+    "area_id": "identity_access",
+    "statement": "For a leaver, the manager files an access-removal ticket at least 5 business days before the last day, using the Leaver checklist in the IT wiki.",
+    "answer_keywords": [
+      [
+        "5 business days",
+        "five business days",
+        "5 days",
+        "five days"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2024-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T098",
+    "kind": "access",
+    "area_id": "identity_access",
+    "statement": "Service-account credentials are stored in the 1Password vault 'Infra-Service'; Nadia and Mike have access.",
+    "answer_keywords": [
+      [
+        "Infra-Service",
+        "infra service"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2024-05-06",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T099",
+    "kind": "fact",
+    "area_id": "identity_access",
+    "statement": "Okta syncs users from the legacy HCU.LOCAL Active Directory via the Okta AD agent on hcu-dc02.",
+    "answer_keywords": [
+      [
+        "dc02"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2023-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T100",
+    "kind": "procedure",
+    "area_id": "identity_access",
+    "statement": "If Okta stops syncing from AD, restart the 'Okta AD Agent' Windows service on the domain controller rather than rebooting the whole server.",
+    "answer_keywords": [
+      [
+        "AD Agent",
+        "AD agent"
+      ],
+      [
+        "service"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2023-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T101",
+    "kind": "vendor_contact",
+    "area_id": "identity_access",
+    "statement": "Okta licences are renewed through the reseller Lighthouse IT; our contact is Brenda Clarke.",
+    "answer_keywords": [
+      [
+        "Brenda"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2025-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T102",
+    "kind": "landmine",
+    "area_id": "identity_access",
+    "statement": "The old domain controller HCU-DC01 still runs the badge-door sync scheduled task; decommissioning it breaks door badges.",
+    "answer_keywords": [
+      [
+        "DC01"
+      ],
+      [
+        "badge"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2019-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T103",
+    "kind": "fact",
+    "area_id": "identity_access",
+    "statement": "The AD krbtgt account password has not been rotated since 2019.",
+    "answer_keywords": [
+      [
+        "2019"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2019-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T104",
+    "kind": "access",
+    "area_id": "identity_access",
+    "statement": "The YubiKey for the break-glass Okta admin account is kept in the safe at the Spring Garden branch.",
+    "answer_keywords": [
+      [
+        "Spring Garden"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "mike"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2024-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T105",
+    "kind": "access",
+    "area_id": "identity_access",
+    "statement": "The old 'hcu-admin' domain admin account is still enabled because the phone-system vendor uses it; Mike meant to disable it after the PBX swap.",
+    "answer_keywords": [
+      [
+        "hcu-admin"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2026-04-02",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": ""
+  },
+  {
+    "id": "T106",
+    "kind": "owner",
+    "area_id": "payroll",
+    "statement": "Priya Nair runs payroll end to end; Dave only approves the pay run in Paylane.",
+    "answer_keywords": [
+      [
+        "Priya"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2019-01-07",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T107",
+    "kind": "fact",
+    "area_id": "payroll",
+    "statement": "Staff are paid bi-weekly, every second Friday, by direct deposit.",
+    "answer_keywords": [
+      [
+        "every second Friday",
+        "every other Friday",
+        "bi-weekly",
+        "biweekly",
+        "every two weeks"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "dave"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2017-03-06",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T108",
+    "kind": "landmine",
+    "area_id": "payroll",
+    "statement": "Never upload the payroll bank file after 3pm Wednesday; the bank rolls it to the next processing day and Friday pay lands late (Monday).",
+    "answer_keywords": [
+      [
+        "3pm",
+        "3 pm",
+        "3:00",
+        "15:00",
+        "three"
+      ],
+      [
+        "Wednesday",
+        "Wed"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2021-09-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Learned the hard way in 2021 when pay landed on a Monday."
+  },
+  {
+    "id": "T109",
+    "kind": "recurring_task",
+    "area_id": "payroll",
+    "statement": "Timesheets must be approved in Paylane by Monday 10am of pay week.",
+    "answer_keywords": [
+      [
+        "Monday"
+      ],
+      [
+        "10am",
+        "10 am",
+        "10:00",
+        "ten"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2022-01-10",
+    "valid_to": "2026-05-04",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T110",
+    "kind": "recurring_task",
+    "area_id": "payroll",
+    "statement": "Since May 2026, timesheets must be approved in Paylane by 4pm on the Friday before pay week (Paylane moved its processing earlier).",
+    "answer_keywords": [
+      [
+        "Friday"
+      ],
+      [
+        "4pm",
+        "4 pm",
+        "4:00",
+        "16:00",
+        "four"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2026-05-04",
+    "valid_to": null,
+    "supersedes": "T109",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T111",
+    "kind": "recurring_task",
+    "area_id": "payroll",
+    "statement": "CRA payroll source deductions are remitted by the 15th of the following month.",
+    "answer_keywords": [
+      [
+        "15th",
+        "fifteenth"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2017-03-06",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T112",
+    "kind": "recurring_task",
+    "area_id": "payroll",
+    "statement": "T4 slips must be filed with CRA and given to staff by the end of February each year.",
+    "answer_keywords": [
+      [
+        "end of February",
+        "end of Feb",
+        "February 28",
+        "Feb 28",
+        "last day of February"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2017-03-06",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T113",
+    "kind": "vendor_contact",
+    "area_id": "payroll",
+    "statement": "Our Paylane account manager is Gail Fitzgerald (gail.fitzgerald@paylane.ca, 902-555-0148).",
+    "answer_keywords": [
+      [
+        "Gail"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2022-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T114",
+    "kind": "access",
+    "area_id": "payroll",
+    "statement": "The Paylane admin credentials are kept in the Finance vault in 1Password; Priya is the only admin, Dave has approver access only.",
+    "answer_keywords": [
+      [
+        "Finance"
+      ],
+      [
+        "1Password"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2022-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T115",
+    "kind": "access",
+    "area_id": "payroll",
+    "statement": "The backup payroll approver hardware token is kept in the safe in Marc's office.",
+    "answer_keywords": [
+      [
+        "safe"
+      ],
+      [
+        "Marc"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "dave"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2024-01-15",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": ""
+  },
+  {
+    "id": "T116",
+    "kind": "decision",
+    "area_id": "payroll",
+    "statement": "As of May 2026 paper pay cheques were discontinued; all staff are paid by direct deposit.",
+    "answer_keywords": [
+      [
+        "direct deposit"
+      ]
+    ],
+    "known_by": [
+      "priya",
+      "dave"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2026-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T117",
+    "kind": "procedure",
+    "area_id": "payroll",
+    "statement": "To add a new hire to payroll, Priya needs signed federal and Nova Scotia TD1 forms and a direct deposit form at least 5 business days before their first pay.",
+    "answer_keywords": [
+      [
+        "TD1"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2020-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T118",
+    "kind": "procedure",
+    "area_id": "payroll",
+    "statement": "Retroactive pay adjustments must be entered as a separate off-cycle run in Paylane; entering them in a regular run double-counts vacation accrual.",
+    "answer_keywords": [
+      [
+        "off-cycle",
+        "off cycle",
+        "separate run"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2023-04-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": "Priya's tribal knowledge; never written down."
+  },
+  {
+    "id": "T119",
+    "kind": "fact",
+    "area_id": "payroll",
+    "statement": "The payroll clearing GL account is 2150 and Priya reconciles it by hand after every pay run.",
+    "answer_keywords": [
+      [
+        "2150"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2019-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T120",
+    "kind": "owner",
+    "area_id": "backups_dr",
+    "statement": "Mike O'Brien owns backups and disaster recovery; Nadia covers day-to-day alerts.",
+    "answer_keywords": [
+      [
+        "Mike"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2009-02-02",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T121",
+    "kind": "landmine",
+    "area_id": "backups_dr",
+    "statement": "Never restore a backup onto the replication primary (the NAS/SQL primary): replication copies the restore over the DR copy. Always restore to the isolated restore host (HCU-RESTORE01) first.",
+    "answer_keywords": [
+      [
+        "primary"
+      ],
+      [
+        "restore host",
+        "HCU-RESTORE01",
+        "restore box",
+        "isolated"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2022-11-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Landmine #4. Mike learned this in a 2022 near-miss; restored straight to primary and the DR copy was overwritten within minutes."
+  },
+  {
+    "id": "T122",
+    "kind": "fact",
+    "area_id": "backups_dr",
+    "statement": "Nightly backups are retained for 30 days.",
+    "answer_keywords": [
+      [
+        "30 days",
+        "30-day",
+        "thirty days",
+        "30 day"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2023-03-01",
+    "valid_to": "2026-05-11",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T123",
+    "kind": "decision",
+    "area_id": "backups_dr",
+    "statement": "Since 2026-05-11 nightly backups are retained for 14 days (cut to save NAS storage).",
+    "answer_keywords": [
+      [
+        "14 days",
+        "14-day",
+        "fourteen",
+        "two weeks",
+        "14 day"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2026-05-11",
+    "valid_to": null,
+    "supersedes": "T122",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Conflict: in a later thread Nadia states the old month-long retention; Mike corrects her. Conflict: nadia stated an outdated/wrong version ('pretty sure we still keep the nightlies for a full month?'); mike corrected it."
+  },
+  {
+    "id": "T124",
+    "kind": "recurring_task",
+    "area_id": "backups_dr",
+    "statement": "The offsite backup copy is rotated out with the courier every Friday.",
+    "answer_keywords": [
+      [
+        "Friday"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2021-06-01",
+    "valid_to": "2026-04-20",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T125",
+    "kind": "recurring_task",
+    "area_id": "backups_dr",
+    "statement": "Since 2026-04-20 the offsite backup copy is rotated with the courier every Thursday.",
+    "answer_keywords": [
+      [
+        "Thursday"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2026-04-20",
+    "valid_to": null,
+    "supersedes": "T124",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T126",
+    "kind": "recurring_task",
+    "area_id": "backups_dr",
+    "statement": "Mike takes all weekend backup failure alerts.",
+    "answer_keywords": [
+      [
+        "Mike"
+      ],
+      [
+        "weekend"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2019-01-01",
+    "valid_to": "2026-06-01",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T127",
+    "kind": "recurring_task",
+    "area_id": "backups_dr",
+    "statement": "Since June 2026, Nadia and Mike alternate weekends for backup failure alerts.",
+    "answer_keywords": [
+      [
+        "alternate",
+        "every other",
+        "alternating",
+        "turns"
+      ],
+      [
+        "Nadia"
+      ]
+    ],
+    "known_by": [
+      "nadia",
+      "mike"
+    ],
+    "stated_by": "nadia",
+    "valid_from": "2026-06-01",
+    "valid_to": null,
+    "supersedes": "T126",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T128",
+    "kind": "recurring_task",
+    "area_id": "backups_dr",
+    "statement": "A test restore is done on the first Tuesday of every month and logged in a ticket.",
+    "answer_keywords": [
+      [
+        "first Tuesday",
+        "1st Tuesday"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2020-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T129",
+    "kind": "access",
+    "area_id": "backups_dr",
+    "statement": "Veeam console admins are Mike and Nadia; the credentials are in the Infrastructure vault in 1Password.",
+    "answer_keywords": [
+      [
+        "Infrastructure"
+      ],
+      [
+        "1Password"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2023-01-09",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T130",
+    "kind": "fact",
+    "area_id": "backups_dr",
+    "statement": "The nightly backup job starts at 11pm and usually finishes around 3am.",
+    "answer_keywords": [
+      [
+        "11pm",
+        "11 pm",
+        "11:00 pm",
+        "23:00",
+        "eleven"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2018-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T131",
+    "kind": "fact",
+    "area_id": "backups_dr",
+    "statement": "The DR replica is at the colocation site in Moncton, replicated nightly.",
+    "answer_keywords": [
+      [
+        "Moncton"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia",
+      "dave"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2019-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T132",
+    "kind": "decision",
+    "area_id": "backups_dr",
+    "statement": "In April 2026 Mike and Dave decided to move backups to an immutable (hardened) Veeam repository after a phishing/ransomware scare.",
+    "answer_keywords": [
+      [
+        "immutable",
+        "hardened"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "dave"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2026-04-14",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T133",
+    "kind": "access",
+    "area_id": "backups_dr",
+    "statement": "The Veeam break-glass local admin password is in a sealed envelope in the server room safe.",
+    "answer_keywords": [
+      [
+        "envelope"
+      ],
+      [
+        "safe"
+      ]
+    ],
+    "known_by": [
+      "mike",
+      "nadia"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2021-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": ""
+  },
+  {
+    "id": "T134",
+    "kind": "fact",
+    "area_id": "backups_dr",
+    "statement": "The offsite backup drives are stored at Bedford Secure Storage, unit 14.",
+    "answer_keywords": [
+      [
+        "Bedford"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2016-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": "Only Mike knows the storage location."
+  },
+  {
+    "id": "T135",
+    "kind": "decision",
+    "area_id": "backups_dr",
+    "statement": "The backup window starts at 11pm because the branch cash recycler sync to the file server finishes around 10:30pm.",
+    "answer_keywords": [
+      [
+        "recycler"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2018-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T136",
+    "kind": "vendor_contact",
+    "area_id": "backups_dr",
+    "statement": "Our contact at the Moncton colocation site is Rick Gallant.",
+    "answer_keywords": [
+      [
+        "Rick",
+        "Gallant"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2019-05-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T137",
+    "kind": "fact",
+    "area_id": "backups_dr",
+    "statement": "The last full DR failover test was in November 2024, and the DNS cutover step is manual.",
+    "answer_keywords": [
+      [
+        "November 2024",
+        "Nov 2024"
+      ]
+    ],
+    "known_by": [
+      "mike"
+    ],
+    "stated_by": "mike",
+    "valid_from": "2024-11-16",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T138",
+    "kind": "owner",
+    "area_id": "fintrac_reporting",
+    "statement": "Tom Bouchard handles all FINTRAC reporting (LCTR, STR, EFTR) and the AML program.",
+    "answer_keywords": [
+      [
+        "Tom"
+      ]
+    ],
+    "known_by": [
+      "tom",
+      "dave",
+      "jen"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2004-05-17",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T139",
+    "kind": "recurring_task",
+    "area_id": "fintrac_reporting",
+    "statement": "Large cash transaction reports (LCTRs) must be filed within 15 calendar days of the transaction.",
+    "answer_keywords": [
+      [
+        "15",
+        "fifteen"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2020-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Conflict: Colin states a 30-day window; Tom corrects to 15 calendar days. Conflict: colin stated an outdated/wrong version ('I thought we had 30 days to file those large cash reports?'); tom corrected it."
+  },
+  {
+    "id": "T140",
+    "kind": "fact",
+    "area_id": "fintrac_reporting",
+    "statement": "Cash transactions of $10,000 or more, in one transaction or several within 24 hours for the same member, require an LCTR.",
+    "answer_keywords": [
+      [
+        "10,000",
+        "10000",
+        "10k",
+        "ten thousand"
+      ],
+      [
+        "24"
+      ]
+    ],
+    "known_by": [
+      "tom",
+      "jen"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2020-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T141",
+    "kind": "landmine",
+    "area_id": "fintrac_reporting",
+    "statement": "Never submit the LCTR batch twice: FINTRAC can't delete duplicates, each one has to be corrected individually.",
+    "answer_keywords": [
+      [
+        "twice",
+        "duplicate",
+        "double",
+        "again"
+      ],
+      [
+        "delete",
+        "deleted",
+        "one by one",
+        "one at a time",
+        "individually"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2019-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T142",
+    "kind": "procedure",
+    "area_id": "fintrac_reporting",
+    "statement": "LCTRs are keyed in manually through FINTRAC's Web Reporting System (FWR).",
+    "answer_keywords": [
+      [
+        "Web Reporting",
+        "FWR",
+        "web form"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2019-06-01",
+    "valid_to": "2026-07-06",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T143",
+    "kind": "decision",
+    "area_id": "fintrac_reporting",
+    "statement": "Since 2026-07-06 LCTRs are submitted through FINTRAC's API report submission from the AML monitor instead of manual entry.",
+    "answer_keywords": [
+      [
+        "API"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2026-07-06",
+    "valid_to": null,
+    "supersedes": "T142",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T144",
+    "kind": "procedure",
+    "area_id": "fintrac_reporting",
+    "statement": "Branch staff who see something suspicious fill out an internal Unusual Transaction Report (UTR) for Tom and never tell the member.",
+    "answer_keywords": [
+      [
+        "UTR",
+        "unusual transaction report"
+      ]
+    ],
+    "known_by": [
+      "tom",
+      "jen"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2018-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T145",
+    "kind": "recurring_task",
+    "area_id": "fintrac_reporting",
+    "statement": "Tom's rule: STRs are filed with FINTRAC within 3 business days of deciding a transaction is suspicious.",
+    "answer_keywords": [
+      [
+        "3 business days",
+        "three business days",
+        "3 working days",
+        "three working days"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2021-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T146",
+    "kind": "recurring_task",
+    "area_id": "fintrac_reporting",
+    "statement": "Electronic funds transfer reports (international wires of $10,000+) are due within five working days.",
+    "answer_keywords": [
+      [
+        "five working days",
+        "5 working days",
+        "five business days",
+        "5 business days"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2020-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T147",
+    "kind": "access",
+    "area_id": "fintrac_reporting",
+    "statement": "Tom is the only administrator on Harbourline's FINTRAC reporting account; Marc is named senior officer but has no login.",
+    "answer_keywords": [
+      [
+        "Tom"
+      ],
+      [
+        "admin"
+      ]
+    ],
+    "known_by": [
+      "tom",
+      "marc"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2019-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T148",
+    "kind": "fact",
+    "area_id": "fintrac_reporting",
+    "statement": "LCTR records and supporting slips are kept for five years.",
+    "answer_keywords": [
+      [
+        "five years",
+        "5 years"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2015-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T149",
+    "kind": "decision",
+    "area_id": "fintrac_reporting",
+    "statement": "From July 2026, every LCTR batch gets a second review by Jen before Tom submits it.",
+    "answer_keywords": [
+      [
+        "Jen"
+      ],
+      [
+        "review",
+        "second look",
+        "double-check",
+        "check"
+      ]
+    ],
+    "known_by": [
+      "tom",
+      "jen",
+      "dave"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2026-07-13",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T150",
+    "kind": "decision",
+    "area_id": "fintrac_reporting",
+    "statement": "FINTRAC's 2025 examination flagged late LCTRs; the remediation plan is due by November 30, 2026.",
+    "answer_keywords": [
+      [
+        "November 30",
+        "Nov 30",
+        "2026-11-30",
+        "end of November"
+      ]
+    ],
+    "known_by": [
+      "tom",
+      "marc"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2026-03-20",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "private",
+    "notes": ""
+  },
+  {
+    "id": "T151",
+    "kind": "recurring_task",
+    "area_id": "fintrac_reporting",
+    "statement": "The AML compliance program's two-year effectiveness review is due by March 2027; last done March 2025.",
+    "answer_keywords": [
+      [
+        "2027"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2025-03-31",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T152",
+    "kind": "vendor_contact",
+    "area_id": "fintrac_reporting",
+    "statement": "Our FINTRAC examiner contact is Linda Pereira at the Montreal regional office.",
+    "answer_keywords": [
+      [
+        "Linda",
+        "Pereira"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2025-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T153",
+    "kind": "access",
+    "area_id": "fintrac_reporting",
+    "statement": "The AML risk assessment spreadsheet lives only on Tom's personal H: drive, not on the shared Compliance folder.",
+    "answer_keywords": [
+      [
+        "H: drive",
+        "H drive",
+        "H:"
+      ]
+    ],
+    "known_by": [
+      "tom"
+    ],
+    "stated_by": "tom",
+    "valid_from": "2022-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T154",
+    "kind": "owner",
+    "area_id": "card_processing",
+    "statement": "Jen handles day-to-day debit card operations and disputes; Priya handles Tidewater settlement and billing.",
+    "answer_keywords": [
+      [
+        "Jen"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "priya",
+      "dave"
+    ],
+    "stated_by": "dave",
+    "valid_from": "2016-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T155",
+    "kind": "vendor_contact",
+    "area_id": "card_processing",
+    "statement": "Our Tidewater Card Services account rep is Kevin Arsenault.",
+    "answer_keywords": [
+      [
+        "Kevin"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "priya"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2023-09-01",
+    "valid_to": "2026-06-08",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T156",
+    "kind": "vendor_contact",
+    "area_id": "card_processing",
+    "statement": "Since June 2026 our Tidewater account rep is Shauna Doyle (shauna.doyle@tidewatercard.ca, 1-866-555-0192).",
+    "answer_keywords": [
+      [
+        "Shauna"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "priya"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2026-06-08",
+    "valid_to": null,
+    "supersedes": "T155",
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": "Conflict: Colin uses the outdated contact; Jen corrects with the new rep. Conflict: colin stated an outdated/wrong version (\"I just emailed our Tidewater rep from the old contacts sheet, haven't heard back\"); jen corrected it."
+  },
+  {
+    "id": "T157",
+    "kind": "procedure",
+    "area_id": "card_processing",
+    "statement": "Members have 90 days from the transaction date to dispute a debit card transaction.",
+    "answer_keywords": [
+      [
+        "90",
+        "ninety"
+      ]
+    ],
+    "known_by": [
+      "jen"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2020-01-01",
+    "valid_to": "2026-07-01",
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T158",
+    "kind": "procedure",
+    "area_id": "card_processing",
+    "statement": "Since 2026-07-01 Tidewater only accepts debit card disputes within 60 days of the transaction.",
+    "answer_keywords": [
+      [
+        "60",
+        "sixty"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "priya"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2026-07-01",
+    "valid_to": null,
+    "supersedes": "T157",
+    "importance": 3,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T159",
+    "kind": "landmine",
+    "area_id": "card_processing",
+    "statement": "Don't place card reissue orders on the last business day of the month: Tidewater's month-end cutoff silently drops them.",
+    "answer_keywords": [
+      [
+        "last business day",
+        "month-end",
+        "month end",
+        "end of the month",
+        "last day of the month"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "priya"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2024-03-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": true,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T160",
+    "kind": "procedure",
+    "area_id": "card_processing",
+    "statement": "For a lost or stolen card, hotcard it in the Tidewater portal immediately, then order the replacement.",
+    "answer_keywords": [
+      [
+        "hotcard",
+        "hot card",
+        "hot-card"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2019-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T161",
+    "kind": "vendor_contact",
+    "area_id": "card_processing",
+    "statement": "After hours, members report lost/stolen cards to Tidewater's 24/7 line at 1-800-555-0177.",
+    "answer_keywords": [
+      [
+        "555-0177"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2019-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T162",
+    "kind": "access",
+    "area_id": "card_processing",
+    "statement": "Tidewater portal admins are Jen and Priya; the credentials are in the Member Services vault in 1Password.",
+    "answer_keywords": [
+      [
+        "Member Services"
+      ],
+      [
+        "1Password"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "priya"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2022-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T163",
+    "kind": "recurring_task",
+    "area_id": "card_processing",
+    "statement": "Priya reconciles the Tidewater daily settlement report against the GL every morning by 10am.",
+    "answer_keywords": [
+      [
+        "settlement"
+      ],
+      [
+        "morning",
+        "10am",
+        "10 am",
+        "10:00"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2018-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T164",
+    "kind": "fact",
+    "area_id": "card_processing",
+    "statement": "Default debit card daily limits are $3,000 for point-of-sale and $1,000 for ATM withdrawals.",
+    "answer_keywords": [
+      [
+        "3,000",
+        "3000",
+        "3k"
+      ],
+      [
+        "1,000",
+        "1000",
+        "1k"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2021-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T165",
+    "kind": "decision",
+    "area_id": "card_processing",
+    "statement": "From June 2026 all card reissues are chip and contactless; magstripe-only cards are no longer issued.",
+    "answer_keywords": [
+      [
+        "contactless"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "priya",
+      "dave"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2026-05-19",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T166",
+    "kind": "procedure",
+    "area_id": "card_processing",
+    "statement": "Members reset their PIN themselves at a branch PIN pad; staff never ask for or see the PIN.",
+    "answer_keywords": [
+      [
+        "PIN pad",
+        "PIN-pad",
+        "pinpad"
+      ]
+    ],
+    "known_by": [
+      "jen",
+      "colin"
+    ],
+    "stated_by": "jen",
+    "valid_from": "2019-01-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": true,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T167",
+    "kind": "fact",
+    "area_id": "card_processing",
+    "statement": "Tidewater charges $4.50 per emergency card reissue; Priya negotiated a waiver for fraud reissues in 2024.",
+    "answer_keywords": [
+      [
+        "4.50"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2024-02-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 1,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  },
+  {
+    "id": "T168",
+    "kind": "decision",
+    "area_id": "card_processing",
+    "statement": "The Tidewater contract renews in June 2027 and needs 120 days' notice to change terms.",
+    "answer_keywords": [
+      [
+        "June 2027"
+      ]
+    ],
+    "known_by": [
+      "priya"
+    ],
+    "stated_by": "priya",
+    "valid_from": "2024-06-01",
+    "valid_to": null,
+    "supersedes": null,
+    "importance": 2,
+    "is_landmine": false,
+    "in_corpus": false,
+    "visibility": "public",
+    "notes": ""
+  }
+]

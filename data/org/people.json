@@ -1,0 +1,123 @@
+[
+  {
+    "id": "marc",
+    "name": "Marc Leblanc",
+    "role": "Chief Executive Officer",
+    "team": "leadership",
+    "email": "marc.leblanc@harbourlinecu.ca",
+    "start_date": "2011-04-04",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": null
+  },
+  {
+    "id": "dave",
+    "name": "Dave MacLeod",
+    "role": "Chief Operating Officer",
+    "team": "leadership",
+    "email": "dave.macleod@harbourlinecu.ca",
+    "start_date": "2014-09-02",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": "marc"
+  },
+  {
+    "id": "sarah",
+    "name": "Sarah Chen",
+    "role": "Senior Backend Engineer",
+    "team": "engineering",
+    "email": "sarah.chen@harbourlinecu.ca",
+    "start_date": "2020-06-15",
+    "departure_date": "2026-09-11",
+    "departure_type": "resignation",
+    "manager_id": "dave"
+  },
+  {
+    "id": "aisha",
+    "name": "Aisha Rahman",
+    "role": "Junior Backend Engineer",
+    "team": "engineering",
+    "email": "aisha.rahman@harbourlinecu.ca",
+    "start_date": "2025-08-05",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": "dave"
+  },
+  {
+    "id": "alex",
+    "name": "Alex Rivera",
+    "role": "Backend Engineer",
+    "team": "engineering",
+    "email": "alex.rivera@harbourlinecu.ca",
+    "start_date": "2026-09-14",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": "dave"
+  },
+  {
+    "id": "mike",
+    "name": "Mike O'Brien",
+    "role": "IT Infrastructure Specialist (part-time contract)",
+    "team": "it",
+    "email": "mike.obrien@harbourlinecu.ca",
+    "start_date": "2009-02-02",
+    "departure_date": "2026-10-30",
+    "departure_type": "contract_end",
+    "manager_id": "dave"
+  },
+  {
+    "id": "nadia",
+    "name": "Nadia Kaur",
+    "role": "IT Support Analyst",
+    "team": "it",
+    "email": "nadia.kaur@harbourlinecu.ca",
+    "start_date": "2023-01-09",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": "dave"
+  },
+  {
+    "id": "tom",
+    "name": "Tom Bouchard",
+    "role": "Compliance Officer",
+    "team": "operations",
+    "email": "tom.bouchard@harbourlinecu.ca",
+    "start_date": "2004-05-17",
+    "departure_date": "2026-12-18",
+    "departure_type": "retirement",
+    "manager_id": "marc"
+  },
+  {
+    "id": "priya",
+    "name": "Priya Nair",
+    "role": "Finance & Payroll Manager",
+    "team": "finance",
+    "email": "priya.nair@harbourlinecu.ca",
+    "start_date": "2017-03-06",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": "dave"
+  },
+  {
+    "id": "jen",
+    "name": "Jen Theriault",
+    "role": "Member Services Lead",
+    "team": "member_services",
+    "email": "jen.theriault@harbourlinecu.ca",
+    "start_date": "2015-10-13",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": "dave"
+  },
+  {
+    "id": "colin",
+    "name": "Colin Doucette",
+    "role": "Member Services Representative",
+    "team": "member_services",
+    "email": "colin.doucette@harbourlinecu.ca",
+    "start_date": "2022-05-30",
+    "departure_date": null,
+    "departure_type": null,
+    "manager_id": "jen"
+  }
+]

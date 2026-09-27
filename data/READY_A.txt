@@ -1,0 +1,53 @@
+READY 2026-09-26T23:38:07 seed=7
+{
+  "docs": {
+    "slack": 3445,
+    "email": 235,
+    "tickets": 209,
+    "docs": 25,
+    "interviews": 0
+  },
+  "truth_by_kind": {
+    "access": 19,
+    "decision": 23,
+    "fact": 38,
+    "landmine": 16,
+    "owner": 10,
+    "procedure": 23,
+    "recurring_task": 26,
+    "vendor_contact": 13
+  },
+  "truth_total": 168,
+  "in_corpus": 142,
+  "superseded": 21,
+  "landmines": 13,
+  "questions": {
+    "train": {
+      "current": 60,
+      "fact": 145,
+      "landmine": 42,
+      "routing": 35,
+      "unanswerable": 106
+    },
+    "dev": {
+      "current": 24,
+      "fact": 60,
+      "landmine": 21,
+      "routing": 14,
+      "unanswerable": 48
+    },
+    "test": {
+      "current": 39,
+      "fact": 80,
+      "landmine": 18,
+      "routing": 21,
+      "unanswerable": 58
+    }
+  },
+  "question_totals": {
+    "train": 388,
+    "dev": 167,
+    "test": 216
+  },
+  "test_sha256": "ea2160d298175d63370bf73f64e366ffe2c2e721a5386ba1a1a491282aa7c81e"
+}
