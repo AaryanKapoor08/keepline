@@ -1,12 +1,46 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Hash, Mail, Ticket, FileText, Mic, ExternalLink, ChevronDown } from "lucide-react";
 import { fmtDate, pname } from "@/lib/data";
 
 export function cn(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
+}
+
+const SHEET_EASE = [0.25, 0.1, 0.25, 1] as const;
+
+/* Right-hand sheet over a dimmed, lightly blurred scrim. Portalled to <body> so it always covers the
+   viewport: an ancestor with backdrop-filter/transform (e.g. the frosted sticky nav) would otherwise
+   become the containing block for `position: fixed` and squash the sheet into that ancestor's box.
+   Render it as a direct child of <AnimatePresence> for the exit animation. */
+export function Sheet({ onClose, className, label, children }: { onClose: () => void; className?: string; label?: string; children: React.ReactNode }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }} className="fixed inset-0 z-[100] flex justify-end bg-black/25 backdrop-blur-[3px]" onClick={onClose}>
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+        initial={{ x: 60, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: 60, opacity: 0 }}
+        transition={{ duration: 0.45, ease: SHEET_EASE }}
+        onClick={(e) => e.stopPropagation()}
+        className={cn("m-4 max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] rounded-[20px] bg-surface2 shadow-[0_24px_80px_rgba(0,0,0,0.22),0_2px_8px_rgba(0,0,0,0.06)]", className)}
+      >
+        {children}
+      </motion.div>
+    </motion.div>,
+    document.body,
+  );
 }
 
 export function Ticker({ value, decimals = 0, suffix = "", prefix = "", className }: {
@@ -29,7 +63,7 @@ export function Card({ children, className, delay = 0, glow }: { children: React
       viewport={{ once: true }}
       transition={{ duration: 0.7, delay, ease: [0.25, 0.1, 0.25, 1] }}
       className={cn(
-        "glass rounded-[22px] relative",
+        "glass rounded-[20px] relative",
         glow === "alarm" && "",
         glow === "accent" && "",
         className,
@@ -53,7 +87,7 @@ export function Badge({ children, tone = "muted", className }: { children: React
 }
 
 export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("text-[17px] font-semibold text-warn", className)}>{children}</div>;
+  return <div className={cn("text-[17px] font-semibold text-muted", className)}>{children}</div>;
 }
 
 export function PageHeader({ eyebrow, title, sub, right }: { eyebrow: string; title: React.ReactNode; sub?: React.ReactNode; right?: React.ReactNode }) {
@@ -99,7 +133,7 @@ export function Receipt({ c, compact }: { c: any; compact?: boolean }) {
             <span>·</span>
             <span className="font-mono">{c.doc_id}</span>
             {c.url && (
-              <a href={c.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent/80 hover:text-accent">
+              <a href={c.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-muted underline-offset-2 hover:text-fg hover:underline">
                 open <ExternalLink className="h-3 w-3" />
               </a>
             )}
@@ -157,7 +191,7 @@ export function Empty({ title, cmd }: { title: string; cmd: string }) {
   return (
     <div className="flex h-full min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-line p-6 text-center">
       <div className="text-[14px] text-muted">{title}</div>
-      <code className="mt-2 rounded-md bg-black/40 px-2 py-1 font-mono text-[12px] text-accent">{cmd}</code>
+      <code className="mt-2 rounded-md bg-surface2 px-2 py-1 font-mono text-[12px] text-fg">{cmd}</code>
     </div>
   );
 }

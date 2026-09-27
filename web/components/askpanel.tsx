@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { X, Hash, Mail, Ticket, FileText, ArrowUp } from "lucide-react";
 import { API, snapshot, normQ, nearest, pname, fmtDate } from "@/lib/data";
-import { cn } from "./ui";
+import { cn, Sheet } from "./ui";
 
 const EASE = [0.25, 0.1, 0.25, 1] as const;
 const SUGGEST = ["What should I know before touching reconciliation?", "Who can cover CoreLink when Sarah leaves?", "What's the office wifi password?"];
@@ -153,14 +153,13 @@ export default function AskPanel() {
   };
   return (
     <>
-      <button onClick={() => setOpen(true)} className="flex h-11 items-center gap-2 rounded-full bg-surface2 pl-4 pr-2 text-[14px] hover:bg-surface3">
+      <button onClick={() => setOpen(true)} className="flex h-11 items-center gap-2 rounded-full bg-black/[0.05] pl-4 pr-1.5 text-[14px] transition-colors hover:bg-black/[0.08]">
         Ask Keepline <span className="rounded-md bg-white px-1.5 py-0.5 font-mono text-[11px] text-muted">⌘K</span>
       </button>
       <AnimatePresence>
         {open && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] flex justify-end bg-black/15" onClick={() => setOpen(false)}>
-            <motion.div initial={{ x: 60, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 60, opacity: 0 }} transition={{ duration: 0.45, ease: EASE }} onClick={(e) => e.stopPropagation()} className="m-4 flex w-[660px] flex-col rounded-[28px] bg-canvas">
-              <div className="flex items-center justify-between rounded-t-[28px] px-6 pb-3 pt-5">
+          <Sheet onClose={() => setOpen(false)} label="Ask Keepline" className="flex w-[660px] flex-col overflow-hidden">
+              <div className="flex shrink-0 items-center justify-between border-b border-[var(--line)] px-6 pb-4 pt-5">
                 <div className="flex items-center gap-3">
                   <div className="text-[22px] font-medium">Ask Keepline</div>
                   <span className="rounded-full bg-white px-3 py-1 text-[12.5px] text-muted">{pname(asker).split(" ")[0]} · Tue Sep 15</span>
@@ -173,7 +172,7 @@ export default function AskPanel() {
                   <button onClick={() => setOpen(false)} className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-white"><X className="h-4 w-4" /></button>
                 </div>
               </div>
-              <div className="flex-1 space-y-6 overflow-y-auto px-6 py-2">
+              <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-2">
                 {!turns.length && (
                   <div className="pt-6">
                     <div className="text-[15px] text-muted">Answers come from Harbourline&apos;s messages, email and tickets, with the receipt. If there&apos;s no evidence, Keepline says so and tells you who to ask.</div>
@@ -192,12 +191,11 @@ export default function AskPanel() {
                 ))}
                 <div ref={end} />
               </div>
-              <form onSubmit={(e) => { e.preventDefault(); send(q); }} className="m-4 flex items-center gap-2 rounded-full bg-white p-1.5 pl-5">
+              <form onSubmit={(e) => { e.preventDefault(); send(q); }} className="m-4 flex shrink-0 items-center gap-2 rounded-full bg-white p-1.5 pl-5">
                 <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask anything about the company's knowledge" className="h-11 flex-1 bg-transparent text-[16px] outline-none placeholder:text-dim" />
                 <button className="flex h-11 w-11 items-center justify-center rounded-full bg-sig text-white"><ArrowUp className="h-5 w-5" /></button>
               </form>
-            </motion.div>
-          </motion.div>
+          </Sheet>
         )}
       </AnimatePresence>
     </>
